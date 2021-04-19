@@ -1,0 +1,92 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "jsx": true,
+    "useJSXTextNode": true,
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "modules": true
+    }
+  },
+  "rules": {
+    "import/extensions": [
+      0,
+      "never",
+      {
+        "ignorePackages": true
+      }
+    ],
+    "spaced-comment": ["error", "always"],
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": ["_id"]
+      }
+    ],
+    "camelcase": [
+      "error",
+      {
+        "allow": ["oauth2_v2", "user_id"],
+        "properties": "never"
+      }
+    ],
+    "func-names": ["error", "never"],
+    "arrow-parens": ["error", "always"],
+    "semi": "error",
+    "no-extra-semi": 0,
+    "no-use-before-define": "off",
+    "import/no-unresolved": "off",
+    "import/prefer-default-export": 0,
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": ["**/*.test.ts", "**/*.spec.ts"]
+      }
+    ],
+    "import/order": "off",
+    "no-unused-vars": "off",
+    "dot-notation": "off",
+    "class-methods-use-this": "off",
+    "comma-dangle": ["error", "always-multiline"],
+    "handle-callback-err": "error",
+    "quotes": ["error", "single"],
+    "object-curly-newline": "off",
+    "no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+    "no-restricted-syntax": "off",
+    "no-await-in-loop": "off",
+    "operator-linebreak": "off",
+    "max-len": [
+      "error",
+      {
+        "code": 120,
+        "ignoreTemplateLiterals": true,
+        "ignoreRegExpLiterals": true,
+        "ignoreComments": true
+      }
+    ],
+    "no-shadow": "off",
+    "function-call-argument-newline": "off",
+    "function-paren-newline": "off",
+    "implicit-arrow-linebreak": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "rules": {
+        "no-undef": "off"
+      }
+    }
+  ],
+  "extends": ["eslint:recommended", "airbnb-base"],
+  "plugins": ["@typescript-eslint"],
+  "settings": {}
+}

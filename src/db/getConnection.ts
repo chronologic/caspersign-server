@@ -1,0 +1,1 @@
+export { getConnection } from 'typeorm';
