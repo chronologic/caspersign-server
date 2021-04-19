@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { depositController, userController } from './controllers';
+
+import { documentController, userController } from './controllers';
 import routeAuthMiddleware from './middleware/route-auth-middleware';
 
 const router = Router();
@@ -15,6 +16,6 @@ router.patch(
   userController.edit
 );
 
-router.get('/deposits', depositController.list);
+router.get('/documents', documentController.list);
 
 export default router;

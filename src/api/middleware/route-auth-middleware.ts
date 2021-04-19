@@ -1,8 +1,8 @@
 import { RequestHandler, Response, NextFunction } from 'express';
 
+import logger from '../../logger';
 import Unauthorized from '../errors/unauthorized';
 import { RequestWithAuth } from '../types';
-import logger from '../logger';
 
 type AddrGetter = (req: RequestWithAuth) => string;
 

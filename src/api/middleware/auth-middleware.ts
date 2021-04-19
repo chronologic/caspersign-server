@@ -1,11 +1,9 @@
 import { RequestHandler, Response, NextFunction } from 'express';
-import * as ethers from 'ethers';
 import atob from 'atob';
 
+import logger from '../../logger';
 import Unauthorized from '../errors/unauthorized';
 import { RequestWithAuth } from '../types';
-import { MESSAGE_TO_SIGN } from '../constants';
-import logger from '../logger';
 
 export const authMiddleware = (): RequestHandler => (req: RequestWithAuth, res: Response, next: NextFunction) => {
   const { user, pass } = decodeAuthHeader(req.headers.authorization);
@@ -17,14 +15,14 @@ export const authMiddleware = (): RequestHandler => (req: RequestWithAuth, res: 
     return next(new Unauthorized());
   }
 
-  const valid = ethers.utils.verifyMessage(MESSAGE_TO_SIGN, pass).toLowerCase() === user;
+  // const valid = ethers.utils.verifyMessage(MESSAGE_TO_SIGN, pass).toLowerCase() === user;
 
-  logger.debug(`Auth valid: ${valid}`);
+  // logger.debug(`Auth valid: ${valid}`);
 
-  if (!valid) {
-    logger.debug('Auth invalid:', { user, pass, MESSAGE_TO_SIGN });
-    return next(new Unauthorized());
-  }
+  // if (!valid) {
+  //   logger.debug('Auth invalid:', { user, pass, MESSAGE_TO_SIGN });
+  //   return next(new Unauthorized());
+  // }
 
   req.authenticatedAddress = user;
   return next();

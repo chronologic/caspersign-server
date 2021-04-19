@@ -1,8 +1,9 @@
-import './env';
-import { createConnection } from 'keeper-db';
+import '../env';
+import { createConnection } from '../db';
+import './services/hellosign';
 
+import logger from '../logger';
 import app from './app';
-import logger from './logger';
 
 createConnection().then(() => {
   logger.info('Connected to database');

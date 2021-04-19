@@ -1,8 +1,7 @@
 import { RequestHandler } from 'express';
 import Joi from '@hapi/joi';
-import { BigNumber } from 'ethers';
-import { getConnection, User } from 'keeper-db';
 
+import { getConnection, User } from '../../../db';
 import requestMiddleware from '../../middleware/request-middleware';
 
 export const addUserSchema = Joi.object().keys({
@@ -18,18 +17,10 @@ const getOrCreate: RequestHandler = async (req, res) => {
   if (!user) {
     user = await getConnection()
       .createEntityManager()
-      .save(User, {
-        address,
-        operators: [],
-      } as User);
+      .save(User, {} as User);
   }
 
-  res.send({
-    address: user.address,
-    email: user.email,
-    balanceEth: BigNumber.from(user.balanceEth || 0).toString(),
-    operatorAddress: user.operators[0]?.address || null,
-  });
+  res.send({});
 };
 
 export default requestMiddleware(getOrCreate, { validation: { body: addUserSchema } });

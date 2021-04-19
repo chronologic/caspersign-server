@@ -4,7 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import express, { Request, Response, NextFunction } from 'express';
 
-import { LOG_LEVEL, PORT } from './env';
+import { LOG_LEVEL, PORT } from '../env';
 import authMiddleware from './middleware/auth-middleware';
 import ApplicationError from './errors/application-error';
 import routes from './routes';
