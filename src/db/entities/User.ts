@@ -16,10 +16,10 @@ export class User {
   email: string;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
-  accessToken: string;
+  oauthToken: string;
 
   @Column({ type: 'timestamp with time zone', nullable: true })
-  accessTokenExpirationDate: Date;
+  oauthTokenExpirationDate: Date;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
   refreshToken: string;

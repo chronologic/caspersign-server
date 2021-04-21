@@ -28,13 +28,13 @@
     "no-underscore-dangle": [
       "error",
       {
-        "allow": ["_id"]
+        "allow": ["_id", "_api"]
       }
     ],
     "camelcase": [
       "error",
       {
-        "allow": ["oauth2_v2", "user_id"],
+        "allow": ["oauth2_v2", "user_id", "signature_request"],
         "properties": "never"
       }
     ],

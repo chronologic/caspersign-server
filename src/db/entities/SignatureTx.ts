@@ -11,8 +11,8 @@ enum Status {
 @Entity()
 export class SignatureTx {
   // TODO: improve this
-  // lame definitions to achieve property access via DepositTx.Status.CONFIRMED
-  // and type annotations via status: DepositTx['Status'] (DepositTx.Status would be better though)
+  // lame definitions to achieve property access via SignatureTx.Status.CONFIRMED
+  // and type annotations via status: SignatureTx['Status'] (SignatureTx.Status would be better though)
   static Status = Status;
 
   Status: Status;

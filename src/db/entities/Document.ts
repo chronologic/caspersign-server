@@ -14,8 +14,22 @@ import { lowercaseTransformer } from './shared';
 import { Signature } from './Signature';
 import { User } from './User';
 
+enum Status {
+  OUT_FOR_SIGNATURE = 'OUT_FOR_SIGNATURE',
+  AWAITING_MY_SIGNATURE = 'AWAITING_MY_SIGNATURE',
+  COMPLETED = 'COMPLETED',
+  DECLINED = 'DECLINED',
+}
+
 @Entity()
 export class Document {
+  // TODO: improve this
+  // lame definitions to achieve property access via Document.Status.CONFIRMED
+  // and type annotations via status: Document['Status'] (Document.Status would be better though)
+  static Status = Status;
+
+  Status: Status;
+
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -37,6 +51,9 @@ export class Document {
 
   @Column({ type: 'varchar', length: 200, nullable: true })
   title: string;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  status: string;
 
   @CreateDateColumn()
   createDate: Date;
