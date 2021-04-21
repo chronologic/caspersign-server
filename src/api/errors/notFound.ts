@@ -1,4 +1,4 @@
-import ApplicationError from './application-error';
+import ApplicationError from './applicationError';
 
 export default class NotFoundError extends ApplicationError {
   constructor(message?: string) {

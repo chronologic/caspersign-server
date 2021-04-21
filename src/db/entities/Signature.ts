@@ -60,7 +60,7 @@ export class Signature {
   email: string;
 
   @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer, nullable: true })
-  authEmail: string;
+  recipientEmail: string;
 
   @CreateDateColumn()
   createDate: Date;

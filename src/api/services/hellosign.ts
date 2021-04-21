@@ -1,9 +1,6 @@
 import HS from 'hellosign-sdk';
 
 import { HS_CLIENT_ID, HS_OAUTH_SECRET, HS_API_KEY } from '../../env';
-import { MINUTE_MILLIS, SECOND_MILLIS } from '../../constants';
-import { User } from '../../db';
-import { updateUser } from './user';
 
 interface HsApiData {
   auth: string;
@@ -49,26 +46,26 @@ export function createOauthClient(oauthToken: string): HsExtended {
   return new HsExtended({ oauthToken, client_id: HS_CLIENT_ID } as any);
 }
 
-export async function getHsForUser(user: User): Promise<HsExtended> {
-  const now = new Date().getTime();
-  const client = createOauthClient(user.oauthToken);
-  const isTokenExpired = new Date(user.oauthTokenExpirationDate).getTime() - now < MINUTE_MILLIS;
+// export async function getHsForUser(user: User): Promise<HsExtended> {
+//   const now = new Date().getTime();
+//   const client = createOauthClient(user.oauthToken);
+//   const isTokenExpired = new Date(user.oauthTokenExpirationDate).getTime() - now < MINUTE_MILLIS;
 
-  if (!user.oauthTokenExpirationDate || isTokenExpired) {
-    const res = await client.oauth.refreshToken(user.refreshToken);
-    const newRefreshToken = res.oauth.refresh_token;
-    const newExpirationDate = new Date(new Date().getTime() + 86400 * SECOND_MILLIS);
-    const newOauthToken = client._api.oauthToken.replace('Bearer ', '');
+//   if (!user.oauthTokenExpirationDate || isTokenExpired) {
+//     const res = await client.oauth.refreshToken(user.refreshToken);
+//     const newRefreshToken = res.oauth.refresh_token;
+//     const newExpirationDate = new Date(new Date().getTime() + 86400 * SECOND_MILLIS);
+//     const newOauthToken = client._api.oauthToken.replace('Bearer ', '');
 
-    await updateUser(user.id, {
-      oauthToken: newOauthToken,
-      oauthTokenExpirationDate: newExpirationDate,
-      refreshToken: newRefreshToken,
-    });
-  }
+//     await updateUser(user.id, {
+//       oauthToken: newOauthToken,
+//       oauthTokenExpirationDate: newExpirationDate,
+//       refreshToken: newRefreshToken,
+//     });
+//   }
 
-  return client;
-}
+//   return client;
+// }
 
 // hsApp.signatureRequest
 //   .list({
@@ -79,13 +76,20 @@ export async function getHsForUser(user: User): Promise<HsExtended> {
 //   })
 //   .catch((e) => console.error(e));
 
-// eslint-disable-next-line no-underscore-dangle
-console.log(hsApp._api);
+// // eslint-disable-next-line no-underscore-dangle
+// console.log(hsApp._api);
 
-const client = createOauthClient('assdfsdfdsfsd');
-console.log(client._api);
+// const client = createOauthClient('assdfsdfdsfsd');
+// console.log(client._api);
 
-// hsApp
-//   .downloadFile('6a3f5002131851fcb4278cb548449294bef44027')
-//   .then((res) => console.log(res.length))
-//   .catch((err) => console.error(err));
+// // hsApp
+// //   .downloadFile('6a3f5002131851fcb4278cb548449294bef44027')
+// //   .then((res) => console.log(res.length))
+// //   .catch((err) => console.error(err));
+
+// hsApp.signatureRequest
+//   .list({ page_size: 3 })
+//   .then((res) => {
+//     console.log(res);
+//   })
+//   .catch(console.error);

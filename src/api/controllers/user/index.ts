@@ -1,2 +1,1 @@
-export { default as getOrCreate } from './getOrCreate';
-export { default as edit } from './edit';
+export { default as oauth } from './oauth';

@@ -2,7 +2,14 @@ import groupBy from 'lodash/groupBy';
 import HelloSign, { SignatureRequestRequestOptions } from 'hellosign-sdk';
 
 import { Document, DocumentHash, getConnection, Signature, SignatureTx } from '../../db';
-import { DocumentDetails, DocumentListParams, DocumentSummary, SignatureSummary, SignerInfo } from '../types';
+import {
+  DocumentDetails,
+  DocumentListParams,
+  DocumentSummary,
+  PaginatedDocuments,
+  SignatureSummary,
+  SignerInfo,
+} from '../types';
 import { sha256Hex } from '../utils';
 import { hsApp, HsExtended } from './hellosign';
 import { getAndUpdateHashes } from './documentHash';
@@ -91,12 +98,12 @@ async function getDocumentUidFromHashOrSignatureId(hashOrSignatureId: string): P
 }
 
 export async function getDocumentByUid(uid: string): Promise<DocumentSummary> {
-  const [doc] = await getDocumentsByUid([uid]);
+  const [doc] = await getDocumentsByUids([uid]);
 
   return doc;
 }
 
-export async function getDocumentsByUid(uids: string[]): Promise<DocumentSummary[]> {
+export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummary[]> {
   const connection = getConnection();
 
   const rawItems = await connection
@@ -152,11 +159,29 @@ export async function getDocumentsByUid(uids: string[]): Promise<DocumentSummary
   return docsWithDetails;
 }
 
-export async function listDocuments(hs: HsExtended, params: DocumentListParams): Promise<DocumentSummary[]> {
+export async function listDocuments(hs: HsExtended, params: DocumentListParams): Promise<PaginatedDocuments> {
   const res = await hs.signatureRequest.list(params);
   const uids = res.signature_requests.map((item) => item.signature_request_id);
+  const items = await getDocumentsByUids(uids);
+  const listInfo: {
+    page: number;
+    // eslint-disable-next-line camelcase
+    num_pages: number;
+    // eslint-disable-next-line camelcase
+    num_results: number;
+    // eslint-disable-next-line camelcase
+    page_size: number;
+  } = (res as any).list_info;
 
-  return getDocumentsByUid(uids);
+  return {
+    meta: {
+      page: listInfo.page,
+      pageSize: listInfo.page_size,
+      pages: listInfo.num_pages,
+      total: listInfo.num_results,
+    },
+    items,
+  };
 }
 
 export async function sendForSignatures(
@@ -182,7 +207,7 @@ export async function sendForSignatures(
     documentId: doc.id,
     signatureUid: sig.signature_id,
     status: Signature.Status.PENDING,
-    email: sig.signer_email_address,
+    recipientEmail: sig.signer_email_address,
     name: sig.signer_name,
   }));
   await saveSignatures(sigs);
@@ -205,7 +230,7 @@ export async function sign({ documentUid, email, documentHashes, payload, signat
   await saveSignatures([
     {
       ...sig,
-      authEmail: email,
+      email,
       status: Signature.Status.SIGNED,
       payload,
     },

@@ -3,7 +3,7 @@ import Joi from '@hapi/joi';
 
 import { LOG_LEVEL } from '../../env';
 import logger from '../../logger';
-import BadRequest from '../errors/bad-request';
+import { BadRequestError } from '../errors';
 
 const getMessageFromJoiError = (error: Joi.ValidationError): string | undefined => {
   if (!error.details && error.message) {
@@ -34,7 +34,7 @@ export const requestMiddleware = (handler: RequestHandler, options?: HandlerOpti
   if (options?.validation?.body) {
     const { error } = options?.validation?.body.validate(req.body);
     if (error != null) {
-      return next(new BadRequest(getMessageFromJoiError(error)));
+      return next(new BadRequestError(getMessageFromJoiError(error)));
     }
   }
   try {

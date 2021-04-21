@@ -1,9 +1,27 @@
+/* eslint-disable camelcase */
 import { Request } from 'express';
 
-import { Document } from '../db';
+import { Document, User } from '../db';
 
 export interface RequestWithAuth extends Request {
-  authenticatedAddress: string;
+  user: User;
+}
+
+export interface HsOauthResponse {
+  access_token: string;
+  token_type: string;
+  refresh_token: string;
+  expires_in: number;
+}
+
+export interface PaginatedDocuments {
+  meta: {
+    page: number;
+    pageSize: number;
+    pages: number;
+    total: number;
+  };
+  items: DocumentSummary[];
 }
 
 export interface DocumentSummary {
