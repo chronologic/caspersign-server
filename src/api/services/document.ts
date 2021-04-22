@@ -14,6 +14,7 @@ import { sha256Hex } from '../utils';
 import { hsApp, HsExtended } from './hellosign';
 import { getAndUpdateHashes } from './documentHash';
 import { saveSignatures } from './signature';
+import { storeSignatureTx } from './signatureTx';
 
 export async function getDocumentDetails(hashOrSignatureId: string): Promise<DocumentDetails> {
   const documentUid = await getDocumentUidFromHashOrSignatureId(hashOrSignatureId);
@@ -236,4 +237,5 @@ export async function sign({ documentUid, email, documentHashes, payload, signat
     },
   ]);
   await getAndUpdateHashes(documentUid, documentHashes);
+  await storeSignatureTx(sig.id, payload);
 }
