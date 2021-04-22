@@ -23,21 +23,18 @@ export async function updateUser(id: number, user: Partial<User>): Promise<void>
   await connection.createEntityManager().update(User, { id }, user);
 }
 
-export async function oauth(authCode: string, state: string): Promise<User> {
-  const res: HsOauthResponse = (await hsApp.oauth.getToken({ code: authCode, state })) as any;
+export async function oauth(code: string, state: string): Promise<User> {
+  const res: HsOauthResponse = (await hsApp.oauth.getToken({ code, state })) as any;
   const oauthTokenExpirationDate = new Date(new Date().getTime() + res.expires_in * SECOND_MILLIS);
   const hs = createOauthClient(res.access_token);
   const { account } = await hs.account.get();
   const user = await getUserByEmail(account.email_address);
 
-  // console.log({ account, user });
-
   // const ref: HsOauthResponse = (await hs.oauth.refreshToken({ refresh_token: res.refresh_token } as any)) as any;
-
-  // console.log(ref);
 
   return saveUser({
     ...user,
+    email: account.email_address,
     oauthToken: res.access_token,
     oauthTokenExpirationDate,
     refreshToken: res.refresh_token,
@@ -56,7 +53,7 @@ export async function getUserByToken(token: string): Promise<User> {
 
 export async function saveUser(user: Partial<User>): Promise<User> {
   const connection = getConnection();
-  const [savedUser] = await connection.createEntityManager().save<User>([user as User], { reload: true });
+  const savedUser = await connection.createEntityManager().save(User, user, { reload: true });
 
   return savedUser;
 }

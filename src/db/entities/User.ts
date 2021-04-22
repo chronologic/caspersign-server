@@ -12,16 +12,16 @@ export class User {
   docs: Document[];
 
   @Index({ unique: true })
-  @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer, nullable: true })
+  @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer })
   email: string;
 
-  @Column({ type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 200 })
   oauthToken: string;
 
-  @Column({ type: 'timestamp with time zone', nullable: true })
+  @Column({ type: 'timestamp with time zone' })
   oauthTokenExpirationDate: Date;
 
-  @Column({ type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 200 })
   refreshToken: string;
 
   @CreateDateColumn()
