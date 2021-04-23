@@ -82,10 +82,13 @@ export function createOauthClient(oauthToken: string): HsExtended {
 // const client = createOauthClient('assdfsdfdsfsd');
 // console.log(client._api);
 
-// // hsApp
-// //   .downloadFile('6a3f5002131851fcb4278cb548449294bef44027')
-// //   .then((res) => console.log(res.length))
-// //   .catch((err) => console.error(err));
+// hsApp
+//   .downloadFile('6a3f5002131851fcb4278cb548449294bef44027')
+//   .then((res) => {
+//     // eslint-disable-next-line global-require
+//     console.log(sha256Hex(res)); // 0ca509c48d132a793f2b28027296226f4b4bead3cb0236c5fc667bb033e3c3cf
+//   })
+//   .catch((err) => console.error(err));
 
 // hsApp.signatureRequest
 //   .list({ page_size: 3 })

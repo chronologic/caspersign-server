@@ -43,3 +43,5 @@ dist
 dist_temp
 data
 *.pem
+*.pdf
+*.sandbox.ts

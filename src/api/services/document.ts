@@ -1,9 +1,13 @@
 import groupBy from 'lodash/groupBy';
 import HelloSign, { SignatureRequestRequestOptions } from 'hellosign-sdk';
+import moment from 'moment-timezone';
+import ipRegex from 'ip-regex';
 
 import { Document, DocumentHash, getConnection, Signature, SignatureTx } from '../../db';
 import {
   DocumentDetails,
+  DocumentHistory,
+  DocumentHistoryType,
   DocumentListParams,
   DocumentSummary,
   PaginatedDocuments,
@@ -16,7 +20,9 @@ import { getAndUpdateHashes } from './documentHash';
 import { saveSignatures } from './signature';
 import { storeSignatureTx } from './signatureTx';
 
-export async function getDocumentDetails(hashOrSignatureId: string): Promise<DocumentDetails> {
+const PdfParser = require('pdf2json');
+
+export async function getDocumentDetails(hashOrSignatureId: string, withHistory = false): Promise<DocumentDetails> {
   const documentUid = await getDocumentUidFromHashOrSignatureId(hashOrSignatureId);
   const docSummary = await getDocumentByUid(documentUid);
   const { signature_request } = await hsApp.signatureRequest.get(documentUid);
@@ -25,23 +31,27 @@ export async function getDocumentDetails(hashOrSignatureId: string): Promise<Doc
   const hash = sha256Hex(file);
   const hashes = await getAndUpdateHashes(documentUid, [hash]);
   const docStatus = await calculateAndUpdateDocumentStatus(documentUid, signature_request);
+  const signatures = docSummary.signatures.map((sig) => {
+    const hsSignatureDetails = signature_request.signatures.find((s) => s.signature_id === sig.signatureUid);
+    return {
+      ...sig,
+      hs: {
+        isOwner: hsSignatureDetails.signer_email_address === signature_request.requester_email_address,
+        email: hsSignatureDetails.signer_email_address,
+        name: hsSignatureDetails.signer_name,
+        signedAt: new Date(hsSignatureDetails.signed_at * 1000).toISOString(),
+        statusCode: hsSignatureDetails.status_code,
+      },
+    };
+  });
+  const history = withHistory ? await getDocumentHistory(documentUid, docSummary.signatures) : null;
 
   return {
     ...docSummary,
     status: docStatus,
     hashes,
-    signatures: docSummary.signatures.map((sig) => {
-      const hsSignatureDetails = signature_request.signatures.find((s) => s.signature_id === sig.signatureUid);
-      return {
-        ...sig,
-        hs: {
-          email: hsSignatureDetails.signer_email_address,
-          name: hsSignatureDetails.signer_name,
-          signedAt: new Date(hsSignatureDetails.signed_at * 1000).toISOString(),
-          statusCode: hsSignatureDetails.status_code,
-        },
-      };
-    }),
+    signatures,
+    history,
   };
 }
 
@@ -115,6 +125,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
       'd.status as "status"',
       'd."createDate" as "createdAt"',
       's."signatureUid" as "signatureUid"',
+      's.ip as "ip"',
       's.name as "name"',
       's.email as "email"',
       's.status as "signatureStatus"',
@@ -136,6 +147,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
     const signatures = rows.map((row) => {
       const signatureDetails: SignatureSummary = {
         signatureUid: row.signatureUid,
+        ip: row.ip,
         completed: row.signatureStatus === Signature.Status.SIGNED,
         email: row.email,
         name: row.name,
@@ -223,7 +235,10 @@ async function saveDocument(doc: Partial<Document>): Promise<Document> {
   return createdDoc;
 }
 
-export async function sign({ documentUid, email, documentHashes, payload, signatureUid }: SignerInfo): Promise<void> {
+export async function sign(
+  ip: string,
+  { documentUid, email, documentHashes, payload, signatureUid }: SignerInfo
+): Promise<void> {
   // TODO: add checks of hashes, payload etc
   await getDocumentByUid(documentUid);
   const connection = getConnection();
@@ -231,6 +246,7 @@ export async function sign({ documentUid, email, documentHashes, payload, signat
   await saveSignatures([
     {
       ...sig,
+      ip,
       email,
       status: Signature.Status.SIGNED,
       payload,
@@ -238,4 +254,121 @@ export async function sign({ documentUid, email, documentHashes, payload, signat
   ]);
   await getAndUpdateHashes(documentUid, documentHashes);
   await storeSignatureTx(sig.id, payload);
+}
+
+export async function getDocumentHistory(
+  documentUid: string,
+  signatures: SignatureSummary[]
+): Promise<DocumentHistory[]> {
+  const file = await hsApp.downloadFile(documentUid);
+  const pdfJson = await parsePdf(file);
+  const rows = extractPdfAuditRows(pdfJson);
+  const historyItems = pdfRowsToHistoryItems(rows);
+  const allHistory = mergeSignaturesAndHistory(signatures, historyItems);
+
+  return allHistory;
+}
+
+async function parsePdf(pdf: Buffer): Promise<any> {
+  const parser = new PdfParser();
+  parser.parseBuffer(pdf);
+
+  return new Promise((resolve, reject) => {
+    parser.on('pdfParser_dataReady', resolve);
+    parser.on('error', reject);
+  });
+}
+
+function extractPdfAuditRows(pdfJson: any): string[] {
+  const auditDateFormat = 'MM / DD / YYYY';
+  const rows: string[] = [];
+  pdfJson.formImage.Pages.forEach((page: any) => {
+    page.Texts.forEach((T: any) => {
+      T.R.forEach((R: any) => {
+        const T = decodeURIComponent(R.T);
+        rows.push(T);
+      });
+    });
+  });
+
+  return rows.slice(rows.lastIndexOf(auditDateFormat));
+}
+
+function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
+  const dateRegex = /[0-9]{1,2} \/ [0-9]{1,2} \/ [0-9]{4}/;
+  const items: DocumentHistory[] = [];
+
+  let buildingItem = false;
+  let currentItem: Partial<DocumentHistory> = {};
+  const events = {
+    'Sent for signature': DocumentHistoryType.SENT,
+    'Viewed by': DocumentHistoryType.VIEWED,
+    'Signed by': DocumentHistoryType.SIGNED,
+    'The document has been completed': DocumentHistoryType.COMPLETED,
+  };
+
+  for (const [i, row] of rows.entries()) {
+    if (buildingItem) {
+      if (ipRegex().test(row)) {
+        // eslint-disable-next-line prefer-destructuring
+        currentItem.ip = row.match(ipRegex())[0];
+
+        if (!dateRegex.test(rows[i + 1])) {
+          buildingItem = false;
+          items.push(currentItem as DocumentHistory);
+          currentItem = {};
+        }
+      } else if (dateRegex.test(row)) {
+        const dateTime = `${row} ${rows[i + 1]}`;
+        currentItem.timestamp = moment.tz(dateTime, 'MM / DD / YYYY HH:mm:ss', 'UTC').toISOString();
+        buildingItem = false;
+        items.push(currentItem as DocumentHistory);
+        currentItem = {};
+      } else {
+        currentItem.description += ` ${row}`;
+      }
+    } else {
+      for (const [text, entryType] of Object.entries(events)) {
+        if (row.startsWith(text)) {
+          currentItem = {
+            description: row,
+            type: entryType,
+          };
+          buildingItem = true;
+        }
+      }
+    }
+  }
+
+  return items;
+}
+
+function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: DocumentHistory[]): DocumentHistory[] {
+  if (signatures.length === 0) {
+    return history;
+  }
+
+  const items: DocumentHistory[] = [];
+  let historyCursor = 0;
+  for (const sig of signatures) {
+    while (
+      history[historyCursor] &&
+      (!history[historyCursor].timestamp ||
+        new Date(sig.createdAt).getTime() > new Date(history[historyCursor].timestamp).getTime())
+    ) {
+      items.push(history[historyCursor]);
+      // eslint-disable-next-line no-plusplus
+      historyCursor++;
+    }
+    const sigHistory: DocumentHistory = {
+      description: `Signed on the blockchain by ${sig.name} (${sig.email})`,
+      type: DocumentHistoryType.SIGNED_ON_CHAIN,
+      ip: sig.ip,
+      timestamp: sig.createdAt,
+      txHash: sig.txHash,
+    };
+    items.push(sigHistory);
+  }
+
+  return items;
 }
