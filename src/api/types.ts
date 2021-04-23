@@ -33,6 +33,7 @@ export interface DocumentSummary {
 }
 
 export interface DocumentDetails extends DocumentSummary {
+  createdByEmail: string;
   signatures: SignatureDetails[];
   hashes: string[];
   history?: DocumentHistory[];
@@ -60,6 +61,7 @@ export interface SignatureSummary {
   email: string;
   name: string;
   completed: boolean;
+  payload?: string;
   txHash: string;
   createdAt: string;
 }
@@ -92,6 +94,7 @@ export interface SignerInfo {
 export interface SignatureInfo {
   e: string; // signer hashed email
   r: string; // recipient hashed email
+  i: string; // signer hashed IP
   t: number; // timestamp
   h: string[]; // document hashes
   p: string; // signer pubkey

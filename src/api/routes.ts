@@ -17,4 +17,6 @@ router.patch(
 
 router.get('/documents', documentController.list);
 
+router.get('/validate', documentController.validate);
+
 export default router;

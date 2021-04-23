@@ -26,7 +26,7 @@ export async function getDocumentDetails(hashOrSignatureId: string, withHistory 
   const documentUid = await getDocumentUidFromHashOrSignatureId(hashOrSignatureId);
   const docSummary = await getDocumentByUid(documentUid);
   const { signature_request } = await hsApp.signatureRequest.get(documentUid);
-  // TODO: skip downloading the file if we know there's no updates
+  // TODO: skip downloading the file if we know there's no updates / file is not needed
   const file = await hsApp.downloadFile(documentUid);
   const hash = sha256Hex(file);
   const hashes = await getAndUpdateHashes(documentUid, [hash]);
@@ -44,10 +44,11 @@ export async function getDocumentDetails(hashOrSignatureId: string, withHistory 
       },
     };
   });
-  const history = withHistory ? await getDocumentHistory(documentUid, docSummary.signatures) : null;
+  const history = withHistory ? await getDocumentHistory(file, docSummary.signatures) : null;
 
   return {
     ...docSummary,
+    createdByEmail: signature_request.requester_email_address,
     status: docStatus,
     hashes,
     signatures,
@@ -128,6 +129,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
       's.ip as "ip"',
       's.name as "name"',
       's.email as "email"',
+      's.payload as "payload"',
       's.status as "signatureStatus"',
       's.createDate as "signedAt"',
       'stx.txHash as "txHash"',
@@ -151,6 +153,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
         completed: row.signatureStatus === Signature.Status.SIGNED,
         email: row.email,
         name: row.name,
+        payload: row.payload,
         txHash: row.txHash,
         createdAt: row.signedAt,
       };
@@ -256,11 +259,7 @@ export async function sign(
   await storeSignatureTx(sig.id, payload);
 }
 
-export async function getDocumentHistory(
-  documentUid: string,
-  signatures: SignatureSummary[]
-): Promise<DocumentHistory[]> {
-  const file = await hsApp.downloadFile(documentUid);
+export async function getDocumentHistory(file: Buffer, signatures: SignatureSummary[]): Promise<DocumentHistory[]> {
   const pdfJson = await parsePdf(file);
   const rows = extractPdfAuditRows(pdfJson);
   const historyItems = pdfRowsToHistoryItems(rows);
