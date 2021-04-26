@@ -5,7 +5,7 @@ import { documentService } from '../../services';
 
 const getDetails: RequestHandler = async (req, res) => {
   const { hash } = req.query;
-  const doc = documentService.getDocumentDetails(hash as string);
+  const doc = await documentService.getDocumentDetails(hash as string);
 
   res.send(doc);
 };

@@ -14,6 +14,7 @@ import {
   SignatureSummary,
   SignerInfo,
 } from '../types';
+import { NotFoundError } from '../errors';
 import { sha256Hex } from '../utils';
 import { hsApp, HsExtended } from './hellosign';
 import { getAndUpdateHashes } from './documentHash';
@@ -104,7 +105,9 @@ async function getDocumentUidFromHashOrSignatureId(hashOrSignatureId: string): P
 
   const res = await q.where(`exists ${exists1.getQuery()}`).orWhere(`exists ${exists2.getQuery()}`).execute();
 
-  // TODO: check result
+  if (res.length === 0) {
+    throw new NotFoundError('Document not found');
+  }
 
   return res[0].documentUid;
 }
