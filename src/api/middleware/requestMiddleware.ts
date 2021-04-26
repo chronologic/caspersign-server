@@ -38,7 +38,7 @@ export const requestMiddleware = (handler: RequestHandler, options?: HandlerOpti
     }
   }
   try {
-    return handler(req, res, next);
+    return await handler(req, res, next);
   } catch (err) {
     if (LOG_LEVEL === 'debug') {
       logger.error(err);
