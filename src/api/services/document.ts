@@ -134,7 +134,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
       's.email as "email"',
       's.payload as "payload"',
       's.status as "signatureStatus"',
-      's.createDate as "signedAt"',
+      'stx.createDate as "signedAt"',
       'stx.txHash as "txHash"',
     ])
     .from(Document, 'd')
@@ -158,7 +158,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
         name: row.name,
         payload: row.payload,
         txHash: row.txHash,
-        createdAt: row.signedAt,
+        signedAt: row.signedAt,
       };
 
       return signatureDetails;
@@ -298,6 +298,7 @@ function extractPdfAuditRows(pdfJson: any): string[] {
 
 function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
   const dateRegex = /[0-9]{1,2} \/ [0-9]{1,2} \/ [0-9]{4}/;
+  const emailRegex = /([+a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i;
   const items: DocumentHistory[] = [];
 
   let buildingItem = false;
@@ -328,6 +329,13 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
         currentItem = {};
       } else {
         currentItem.description += ` ${row}`;
+        // this way we'll get the last email address that appears in the message
+        // some messages contain multiple emails and the last one seems to be the creator's email
+        try {
+          currentItem.email = emailRegex.exec(row)[0] || currentItem.email;
+        } catch (e) {
+          // ignore
+        }
       }
     } else {
       for (const [text, entryType] of Object.entries(events)) {
@@ -356,7 +364,7 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
     while (
       history[historyCursor] &&
       (!history[historyCursor].timestamp ||
-        new Date(sig.createdAt).getTime() > new Date(history[historyCursor].timestamp).getTime())
+        (sig.signedAt && new Date(sig.signedAt).getTime() > new Date(history[historyCursor].timestamp).getTime()))
     ) {
       items.push(history[historyCursor]);
       // eslint-disable-next-line no-plusplus
@@ -364,9 +372,10 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
     }
     const sigHistory: DocumentHistory = {
       description: `Signed on the blockchain by ${sig.name} (${sig.email})`,
+      email: sig.email,
       type: DocumentHistoryType.SIGNED_ON_CHAIN,
       ip: sig.ip,
-      timestamp: sig.createdAt,
+      timestamp: sig.signedAt,
       txHash: sig.txHash,
     };
     items.push(sigHistory);
