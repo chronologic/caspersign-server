@@ -24,10 +24,13 @@ export async function updateUser(id: number, user: Partial<User>): Promise<void>
 }
 
 export async function oauth(code: string, state: string): Promise<User> {
+  console.log('$$$$$$$$$$$$$$$$$$$$ pre get token');
   const res: HsOauthResponse = (await hsApp.oauth.getToken({ code, state })) as any;
+  console.log('$$$$$$$$$$$$$$$$$$$$ AFTER get token');
   const oauthTokenExpirationDate = new Date(new Date().getTime() + res.expires_in * SECOND_MILLIS);
   const hs = createOauthClient(res.access_token);
   const { account } = await hs.account.get();
+  console.log('$$$$$$$$$$$$$$$$$$$$ AFTER get account');
   const user = await getUserByEmail(account.email_address);
 
   // const ref: HsOauthResponse = (await hs.oauth.refreshToken({ refresh_token: res.refresh_token } as any)) as any;
