@@ -25,7 +25,7 @@ const params: ConnectionOptions = {
   entities: [__dirname + `/entities/**/*.${PROD_BUILD ? 'js' : 'ts'}`],
   migrations: [__dirname + `/migrations/**/*.${PROD_BUILD ? 'js' : 'ts'}`],
   subscribers: [__dirname + `/subscribers/**/*.${PROD_BUILD ? 'js' : 'ts'}`],
-  ssl: host !== 'localhost',
+  ssl: host === 'localhost' ? false : { rejectUnauthorized: false },
 };
 
 export async function createConnection() {
