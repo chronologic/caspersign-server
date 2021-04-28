@@ -32,6 +32,22 @@ export class HsExtended extends HS {
     });
   }
 
+  // right after a document has been edited (created / signed / etc)
+  // hellosign will return a 'files still being processed' error
+  // so this aims to handle that gracefully
+  async tryDownloadFile(signatureId: string): Promise<Buffer> {
+    try {
+      const res = await this.downloadFile(signatureId);
+      return res;
+    } catch (err) {
+      if (err?.message.toLowerCase().includes('still being processed')) {
+        return undefined;
+      }
+
+      throw err;
+    }
+  }
+
   // eslint-disable-next-line no-underscore-dangle
   _api: HsApiData = (this as any)._api;
 }
@@ -45,54 +61,3 @@ export const hsApp = new HsExtended({
 export function createOauthClient(oauthToken: string): HsExtended {
   return new HsExtended({ oauthToken, client_id: HS_CLIENT_ID } as any);
 }
-
-// export async function getHsForUser(user: User): Promise<HsExtended> {
-//   const now = new Date().getTime();
-//   const client = createOauthClient(user.oauthToken);
-//   const isTokenExpired = new Date(user.oauthTokenExpirationDate).getTime() - now < MINUTE_MILLIS;
-
-//   if (!user.oauthTokenExpirationDate || isTokenExpired) {
-//     const res = await client.oauth.refreshToken(user.refreshToken);
-//     const newRefreshToken = res.oauth.refresh_token;
-//     const newExpirationDate = new Date(new Date().getTime() + 86400 * SECOND_MILLIS);
-//     const newOauthToken = client._api.oauthToken.replace('Bearer ', '');
-
-//     await updateUser(user.id, {
-//       oauthToken: newOauthToken,
-//       oauthTokenExpirationDate: newExpirationDate,
-//       refreshToken: newRefreshToken,
-//     });
-//   }
-
-//   return client;
-// }
-
-// hsApp.signatureRequest
-//   .list({
-//     page_size: 3,
-//   })
-//   .then((res) => {
-//     console.log(res);
-//   })
-//   .catch((e) => console.error(e));
-
-// // eslint-disable-next-line no-underscore-dangle
-// console.log(hsApp._api);
-
-// const client = createOauthClient('assdfsdfdsfsd');
-// console.log(client._api);
-
-// hsApp
-//   .downloadFile('6a3f5002131851fcb4278cb548449294bef44027')
-//   .then((res) => {
-//     // eslint-disable-next-line global-require
-//     console.log(sha256Hex(res)); // 0ca509c48d132a793f2b28027296226f4b4bead3cb0236c5fc667bb033e3c3cf
-//   })
-//   .catch((err) => console.error(err));
-
-// hsApp.signatureRequest
-//   .list({ page_size: 3 })
-//   .then((res) => {
-//     console.log(res);
-//   })
-//   .catch(console.error);

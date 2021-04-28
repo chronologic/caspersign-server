@@ -59,7 +59,7 @@ export async function getDocumentDetails(
   let file: Buffer;
 
   if (!skipDownload) {
-    file = await hsApp.downloadFile(documentUid);
+    file = await hsApp.tryDownloadFile(documentUid);
   }
 
   let hashes: string[] = [];
@@ -425,4 +425,19 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
   }
 
   return items;
+}
+
+export async function getHashes(hashOrSignatureId: string): Promise<string[]> {
+  const documentUid = await getDocumentUidFromHashOrSignatureId(hashOrSignatureId);
+  const file = await hsApp.tryDownloadFile(documentUid);
+  let hashes: string[] = [];
+
+  if (file) {
+    const hash = sha256Hex(file);
+    hashes = await getAndUpdateHashes(documentUid, [hash]);
+  } else {
+    hashes = await getAndUpdateHashes(documentUid, []);
+  }
+
+  return hashes;
 }
