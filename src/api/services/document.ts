@@ -49,7 +49,7 @@ export async function getDocumentDetails(
         isOwner: hsSignatureDetails.signer_email_address === signature_request.requester_email_address,
         email: hsSignatureDetails.signer_email_address,
         name: hsSignatureDetails.signer_name,
-        signedAt: new Date(hsSignatureDetails.signed_at * 1000).toISOString(),
+        signedAt: hsSignatureDetails.signed_at ? new Date(hsSignatureDetails.signed_at * 1000).toISOString() : null,
         statusCode: hsSignatureDetails.status_code,
       },
     };
