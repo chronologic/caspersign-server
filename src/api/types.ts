@@ -34,6 +34,7 @@ export interface DocumentSummary {
 
 export interface DocumentDetails extends DocumentSummary {
   createdByEmail: string;
+  createdByName: string;
   signatures: SignatureDetails[];
   hashes: string[];
   history?: DocumentHistory[];
@@ -87,17 +88,30 @@ export interface DocumentListParams {
 export interface SignerInfo {
   documentUid: string;
   signatureUid: string;
+  verifier: string;
   email: string;
   documentHashes: string[];
   payload: string;
 }
 
 export interface SignatureInfo {
-  e: string; // signer hashed email
-  r: string; // recipient hashed email
-  i: string; // signer hashed IP
-  t: number; // timestamp
-  h: string[]; // document hashes
-  p: string; // signer pubkey
-  s: string; // signature
+  /** signer verifier (torus) */
+  v: string;
+  /** signer hashed email */
+  e: string;
+  /** recipient hashed email */
+  r: string;
+  /** signer hashed IP */
+  i: string;
+  /** timestamp */
+  t: number;
+  /** document hashes */
+  h: string[];
+  /** signer pubkey */
+  p: string;
+}
+
+export interface SignatureInfoSigned extends SignatureInfo {
+  /** signature */
+  s: string;
 }

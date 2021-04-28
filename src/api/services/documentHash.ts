@@ -4,7 +4,7 @@ export async function getAndUpdateHashes(documentUid: string, maybeNewHashes: st
   const connection = getConnection();
   const rawItems = await connection
     .createQueryBuilder()
-    .select(['dh."hash" as "hash"', 'd.id as "documentId"'])
+    .select(['dh."hash" as "hash"'])
     .from(Document, 'd')
     .innerJoin(DocumentHash, 'dh', 'd.id = dh."documentId"')
     .where('d."documentUid" = :documentUid', { documentUid })
@@ -15,8 +15,7 @@ export async function getAndUpdateHashes(documentUid: string, maybeNewHashes: st
 
   for (const hash of maybeNewHashes) {
     if (!hashes.includes(hash)) {
-      const { documentId } = rawItems[0];
-      await storeHash(documentId, hash);
+      await storeHash(documentUid, hash);
       hashes.push(hash);
     }
   }
@@ -24,7 +23,8 @@ export async function getAndUpdateHashes(documentUid: string, maybeNewHashes: st
   return hashes;
 }
 
-async function storeHash(documentId: number, maybeNewHash: string): Promise<void> {
+async function storeHash(documentUid: string, hash: string): Promise<void> {
   const connection = getConnection();
-  await connection.createEntityManager().insert(DocumentHash, { documentId, hash: maybeNewHash });
+  const doc = await connection.createEntityManager().findOne(Document, { documentUid });
+  await connection.createEntityManager().insert(DocumentHash, { documentId: doc.id, hash });
 }

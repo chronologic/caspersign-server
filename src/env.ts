@@ -20,3 +20,5 @@ export const CASPER_PK_PEM = process.env.CASPER_PK_PEM as string;
 export const CASPER_NODE_URL = process.env.CASPER_NODE_URL as string;
 export const CASPER_EVENT_STORE_URL = process.env.CASPER_EVENT_STORE_URL as string;
 export const CASPER_CHAIN_NAME = process.env.CASPER_CHAIN_NAME as string;
+
+export const POSTSIGN_REDIRECT_URL = process.env.POSTSIGN_REDIRECT_URL as string;

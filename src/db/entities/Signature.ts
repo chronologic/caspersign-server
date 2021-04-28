@@ -27,6 +27,14 @@ export class Signature {
 
   Status: Status;
 
+  constructor(partial?: Partial<Signature>) {
+    if (partial) {
+      Object.keys(partial).forEach((key) => {
+        (this as any)[key] = (partial as any)[key];
+      });
+    }
+  }
+
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -59,11 +67,14 @@ export class Signature {
   @Column({ type: 'varchar', length: 120 })
   name: string;
 
-  @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer })
+  @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer, nullable: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer, nullable: true })
+  @Column({ type: 'varchar', length: 120, transformer: lowercaseTransformer })
   recipientEmail: string;
+
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  verifier: string;
 
   @CreateDateColumn()
   createDate: Date;

@@ -5,7 +5,7 @@ import { UnauthorizedError } from '../errors';
 import { RequestWithAuth } from '../types';
 import { userService } from '../services';
 
-export const authMiddleware = (): RequestHandler => async (req: RequestWithAuth, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: RequestWithAuth, res: Response, next: NextFunction) => {
   const token = decodeAuthHeader(req.headers.authorization);
 
   if (!token) {

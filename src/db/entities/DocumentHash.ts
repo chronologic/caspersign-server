@@ -16,7 +16,7 @@ export class DocumentHash {
   document: Document;
 
   @Index()
-  @Column({ type: 'varchar', length: 50, transformer: lowercaseTransformer })
+  @Column({ type: 'varchar', length: 64, transformer: lowercaseTransformer })
   hash: string;
 
   @CreateDateColumn()

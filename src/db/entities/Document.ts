@@ -30,6 +30,14 @@ export class Document {
 
   Status: Status;
 
+  constructor(partial?: Partial<Document>) {
+    if (partial) {
+      Object.keys(partial).forEach((key) => {
+        (this as any)[key] = (partial as any)[key];
+      });
+    }
+  }
+
   @PrimaryGeneratedColumn()
   id: number;
 

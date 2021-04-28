@@ -15,25 +15,34 @@ import {
   SignerInfo,
 } from '../types';
 import { NotFoundError } from '../errors';
-import { sha256Hex } from '../utils';
+import { sha256Hex, sleep } from '../utils';
 import { hsApp, HsExtended } from './hellosign';
 import { getAndUpdateHashes } from './documentHash';
 import { saveSignatures } from './signature';
 import { storeSignatureTx } from './signatureTx';
+import { POSTSIGN_REDIRECT_URL } from '../../env';
 
 const PdfParser = require('pdf2json');
 
-export async function getDocumentDetails(hashOrSignatureId: string, withHistory = false): Promise<DocumentDetails> {
+export async function getDocumentDetails(
+  hashOrSignatureId: string,
+  withHistory = false,
+  skipDownload = false
+): Promise<DocumentDetails> {
   const documentUid = await getDocumentUidFromHashOrSignatureId(hashOrSignatureId);
   const docSummary = await getDocumentByUid(documentUid);
   const { signature_request } = await hsApp.signatureRequest.get(documentUid);
-  // TODO: skip downloading the file if we know there's no updates / file is not needed
-  const file = await hsApp.downloadFile(documentUid);
-  const hash = sha256Hex(file);
-  const hashes = await getAndUpdateHashes(documentUid, [hash]);
   const docStatus = await calculateAndUpdateDocumentStatus(documentUid, signature_request);
+  const createdByEmail = signature_request.requester_email_address;
+  let createdByName = '';
+
   const signatures = docSummary.signatures.map((sig) => {
     const hsSignatureDetails = signature_request.signatures.find((s) => s.signature_id === sig.signatureUid);
+
+    if (createdByEmail === sig.email || createdByEmail === hsSignatureDetails.signer_email_address) {
+      createdByName = hsSignatureDetails.signer_name || sig.name || createdByName;
+    }
+
     return {
       ...sig,
       hs: {
@@ -45,11 +54,31 @@ export async function getDocumentDetails(hashOrSignatureId: string, withHistory 
       },
     };
   });
-  const history = withHistory ? await getDocumentHistory(file, docSummary.signatures) : null;
+
+  // TODO: skip downloading the file if we know there's no updates / file is not needed
+  let file: Buffer;
+
+  if (!skipDownload) {
+    file = await hsApp.downloadFile(documentUid);
+  }
+
+  let hashes: string[] = [];
+  if (file) {
+    const hash = sha256Hex(file);
+    hashes = await getAndUpdateHashes(documentUid, [hash]);
+  } else {
+    hashes = await getAndUpdateHashes(documentUid, []);
+  }
+
+  let history: DocumentHistory[] = [];
+  if (!skipDownload && withHistory && file) {
+    history = await getDocumentHistory(file, docSummary.signatures);
+  }
 
   return {
     ...docSummary,
-    createdByEmail: signature_request.requester_email_address,
+    createdByEmail,
+    createdByName,
     status: docStatus,
     hashes,
     signatures,
@@ -140,7 +169,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
     .from(Document, 'd')
     .leftJoin(Signature, 's', 'd.id = s."documentId"')
     .leftJoin(SignatureTx, 'stx', 's.id = stx."signatureId"')
-    .where('d."documentUid" in (...:uids)', { uids })
+    .where('d."documentUid" in (:...uids)', { uids })
     .execute();
 
   const groups = groupBy(rawItems, 'documentUid');
@@ -212,16 +241,21 @@ export async function sendForSignatures(
   // const file = requestOptions.files[0];
   // const hash = sha256Hex(file);
 
-  const { signature_request } = await hs.signatureRequest.send(requestOptions);
-  const file = await hs.downloadFile(signature_request.signature_request_id);
-  const hash = sha256Hex(file);
+  const { signature_request } = await hs.signatureRequest.send({
+    ...requestOptions,
+    signing_redirect_url: POSTSIGN_REDIRECT_URL,
+  } as any);
   const doc = await saveDocument({
     documentUid: signature_request.signature_request_id,
     status: Document.Status.OUT_FOR_SIGNATURE,
     title: signature_request.title,
     userId,
   });
-  await getAndUpdateHashes(doc.documentUid, [hash]);
+
+  // this won't work here because "Files are still being processed. Please try again later."
+  // const file = await hs.downloadFile(signature_request.signature_request_id);
+  // const hash = sha256Hex(file);
+  // await getAndUpdateHashes(doc.documentUid, [hash]);
   const sigs: Partial<Signature>[] = signature_request.signatures.map((sig) => ({
     documentId: doc.id,
     signatureUid: sig.signature_id,
@@ -231,19 +265,19 @@ export async function sendForSignatures(
   }));
   await saveSignatures(sigs);
 
-  return getDocumentDetails(hash);
+  return getDocumentDetails(sigs[0].signatureUid, false, true);
 }
 
-async function saveDocument(doc: Partial<Document>): Promise<Document> {
+export async function saveDocument(doc: Partial<Document>): Promise<Document> {
   const connection = getConnection();
-  const [createdDoc] = await connection.createEntityManager().save<Document>([doc as Document], { reload: true });
+  const createdDoc = await connection.createEntityManager().save<Document>(new Document(doc), { reload: true });
 
   return createdDoc;
 }
 
 export async function sign(
   ip: string,
-  { documentUid, email, documentHashes, payload, signatureUid }: SignerInfo
+  { documentUid, email, documentHashes, payload, signatureUid, verifier }: SignerInfo
 ): Promise<void> {
   // TODO: add checks of hashes, payload etc
   await getDocumentByUid(documentUid);
@@ -256,6 +290,7 @@ export async function sign(
       email,
       status: Signature.Status.SIGNED,
       payload,
+      verifier,
     },
   ]);
   await getAndUpdateHashes(documentUid, documentHashes);
@@ -345,6 +380,11 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
             type: entryType,
           };
           buildingItem = true;
+          try {
+            currentItem.email = emailRegex.exec(row)[0] || currentItem.email;
+          } catch (e) {
+            // ignore
+          }
         }
       }
     }
@@ -370,15 +410,18 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
       // eslint-disable-next-line no-plusplus
       historyCursor++;
     }
-    const sigHistory: DocumentHistory = {
-      description: `Signed on the blockchain by ${sig.name} (${sig.email})`,
-      email: sig.email,
-      type: DocumentHistoryType.SIGNED_ON_CHAIN,
-      ip: sig.ip,
-      timestamp: sig.signedAt,
-      txHash: sig.txHash,
-    };
-    items.push(sigHistory);
+
+    if (sig.completed) {
+      const sigHistory: DocumentHistory = {
+        description: `Signed on the blockchain by ${sig.name} (${sig.email})`,
+        email: sig.email,
+        type: DocumentHistoryType.SIGNED_ON_CHAIN,
+        ip: sig.ip,
+        timestamp: sig.signedAt,
+        txHash: sig.txHash,
+      };
+      items.push(sigHistory);
+    }
   }
 
   return items;
