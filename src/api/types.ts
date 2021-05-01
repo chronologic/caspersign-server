@@ -15,13 +15,14 @@ export interface HsOauthResponse {
 }
 
 export interface PaginatedDocuments {
-  meta: {
-    page: number;
-    pageSize: number;
-    pages: number;
-    total: number;
-  };
+  meta: PaginationMeta;
   items: DocumentSummary[];
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 export interface DocumentSummary {

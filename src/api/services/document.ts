@@ -3,7 +3,8 @@ import HelloSign, { SignatureRequestRequestOptions } from 'hellosign-sdk';
 import moment from 'moment-timezone';
 import ipRegex from 'ip-regex';
 
-import { Document, DocumentHash, getConnection, Signature, SignatureTx } from '../../db';
+import { POSTSIGN_REDIRECT_URL } from '../../env';
+import { Document, DocumentHash, getConnection, Signature, SignatureTx, User } from '../../db';
 import {
   DocumentDetails,
   DocumentHistory,
@@ -20,7 +21,6 @@ import { hsApp, HsExtended } from './hellosign';
 import { getAndUpdateHashes } from './documentHash';
 import { saveSignatures } from './signature';
 import { storeSignatureTx } from './signatureTx';
-import { POSTSIGN_REDIRECT_URL } from '../../env';
 
 const PdfParser = require('pdf2json');
 
@@ -207,26 +207,39 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
   return docsWithDetails;
 }
 
-export async function listDocuments(hs: HsExtended, params: DocumentListParams): Promise<PaginatedDocuments> {
-  const res = await hs.signatureRequest.list(params);
-  const uids = res.signature_requests.map((item) => item.signature_request_id);
+export async function listDocuments(user: User, params: DocumentListParams): Promise<PaginatedDocuments> {
+  // const res = await hs.signatureRequest.list(params);
+  // const uids = res.signature_requests.map((item) => item.signature_request_id);
+
+  const connection = getConnection();
+
+  const q = connection
+    .createQueryBuilder()
+    .select('"documentUid"')
+    .from(Document, 'd')
+    .innerJoin(User, 'u', 'u.id = d."userId"')
+    .where('u.id = :id', { id: user.id });
+
+  const offset = params.page_size * (params.page - 1);
+
+  const rawItems = await q.addOrderBy('d."createDate"', 'DESC').limit(params.page_size).offset(offset).execute();
+  const total = await q.getCount();
+  const uids = rawItems.map((row: any) => row.documentUid);
   const items = await getDocumentsByUids(uids);
-  const listInfo: {
-    page: number;
-    // eslint-disable-next-line camelcase
-    num_pages: number;
-    // eslint-disable-next-line camelcase
-    num_results: number;
-    // eslint-disable-next-line camelcase
-    page_size: number;
-  } = (res as any).list_info;
+
+  // const listInfo: {
+  //   page: number;
+  //   // eslint-disable-next-line camelcase
+  //   num_pages: number;
+  //   // eslint-disable-next-line camelcase
+  //   num_results: number;
+  // } = (res as any).list_info;
 
   return {
     meta: {
-      page: listInfo.page,
-      pageSize: listInfo.page_size,
-      pages: listInfo.num_pages,
-      total: listInfo.num_results,
+      page: params.page,
+      pageSize: params.page_size,
+      total,
     },
     items,
   };
