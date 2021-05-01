@@ -16,8 +16,8 @@ import {
   SignerInfo,
 } from '../types';
 import { NotFoundError } from '../errors';
-import { sha256Hex, sleep } from '../utils';
-import { hsApp, HsExtended } from './hellosign';
+import { readFilePromise, sha256Hex, sleep } from '../utils';
+import { createOauthClient, hsApp } from './hellosign';
 import { getAndUpdateHashes } from './documentHash';
 import { saveSignatures } from './signature';
 import { storeSignatureTx } from './signatureTx';
@@ -245,26 +245,26 @@ export async function listDocuments(user: User, params: DocumentListParams): Pro
   };
 }
 
-export async function sendForSignatures(
-  hs: HsExtended,
-  userId: number,
-  requestOptions: SignatureRequestRequestOptions
-): Promise<DocumentDetails> {
-  // TODO: generate and store original file hash
-  // const file = requestOptions.files[0];
-  // const hash = sha256Hex(file);
+export async function sendForSignatures(user: User, data: SignatureRequestRequestOptions): Promise<DocumentDetails> {
+  const hs = createOauthClient(user.oauthToken);
 
   const { signature_request } = await hs.signatureRequest.send({
-    ...requestOptions,
+    ...data,
+    test_mode: 1,
     signing_redirect_url: POSTSIGN_REDIRECT_URL,
   } as any);
   const doc = await saveDocument({
     documentUid: signature_request.signature_request_id,
     status: Document.Status.OUT_FOR_SIGNATURE,
     title: signature_request.title,
-    userId,
+    userId: user.id,
   });
 
+  if (data?.files[0]) {
+    const file = await readFilePromise(data?.files[0]);
+    const hash = sha256Hex(file);
+    await getAndUpdateHashes(doc.documentUid, [hash]);
+  }
   // this won't work here because "Files are still being processed. Please try again later."
   // const file = await hs.downloadFile(signature_request.signature_request_id);
   // const hash = sha256Hex(file);

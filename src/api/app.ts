@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import express, { Request, Response, NextFunction } from 'express';
 import proxy from 'express-http-proxy';
+import formData from 'express-form-data';
 
 import { LOG_LEVEL, PORT } from '../env';
 import { ApplicationError } from './errors';
@@ -23,6 +24,7 @@ app.use(
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(formData.parse({ autoClean: true }));
 app.use(morgan('tiny'));
 
 app.set('port', PORT);

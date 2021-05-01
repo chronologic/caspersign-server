@@ -13,6 +13,6 @@ router.get('/documents/:uidOrHash/validate', documentController.validate);
 router.post('/documents/:uid/sign', documentController.sign);
 
 router.get('/documents', authMiddleware, documentController.list);
-router.post('/documents/send', authMiddleware, documentController.send);
+router.post('/documents', authMiddleware, documentController.send);
 
 export default router;
