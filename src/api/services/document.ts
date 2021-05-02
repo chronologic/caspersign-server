@@ -132,7 +132,11 @@ async function getDocumentUidFromHashOrSignatureId(hashOrSignatureId: string): P
     .where('s."documentId" = d.id')
     .andWhere('"signatureUid" = :sig', { sig: hashOrSignatureId });
 
-  const res = await q.where(`exists ${exists1.getQuery()}`).orWhere(`exists ${exists2.getQuery()}`).execute();
+  const res = await q
+    .where(`exists ${exists1.getQuery()}`)
+    .orWhere(`exists ${exists2.getQuery()}`)
+    .orWhere('d."documentUid" = :uid', { uid: hashOrSignatureId })
+    .execute();
 
   if (res.length === 0) {
     throw new NotFoundError('Document not found');
@@ -173,8 +177,10 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
     .execute();
 
   const groups = groupBy(rawItems, 'documentUid');
+  const foundUids = Object.keys(groups);
+  const orderedUids = uids.filter((uid) => foundUids.includes(uid));
 
-  const docsWithDetails = Object.keys(groups).map((uid) => {
+  const docsWithDetails = orderedUids.map((uid) => {
     const rows = groups[uid];
     const first = rows[0];
 
@@ -251,6 +257,7 @@ export async function sendForSignatures(user: User, data: SignatureRequestReques
   const { signature_request } = await hs.signatureRequest.send({
     ...data,
     test_mode: 1,
+    subject: data.title,
     signing_redirect_url: POSTSIGN_REDIRECT_URL,
   } as any);
   const doc = await saveDocument({
@@ -260,11 +267,14 @@ export async function sendForSignatures(user: User, data: SignatureRequestReques
     userId: user.id,
   });
 
-  if (data?.files[0]) {
-    const file = await readFilePromise(data?.files[0]);
-    const hash = sha256Hex(file);
-    await getAndUpdateHashes(doc.documentUid, [hash]);
-  }
+  // can't do this either because if same document is reused then the hash will be the same
+  // which will create lookup collisions
+  // this should be stored in a different place
+  // if (data?.files[0]) {
+  //   const file = await readFilePromise(data?.files[0]);
+  //   const hash = sha256Hex(file);
+  //   await getAndUpdateHashes(doc.documentUid, [hash]);
+  // }
   // this won't work here because "Files are still being processed. Please try again later."
   // const file = await hs.downloadFile(signature_request.signature_request_id);
   // const hash = sha256Hex(file);
