@@ -187,8 +187,6 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
     const rows = groups[uid];
     const first = rows[0];
 
-    console.log(first);
-
     const signatures = rows.map((row) => {
       const signatureDetails: SignatureSummary = {
         signatureUid: row.signatureUid,
@@ -409,7 +407,8 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
           };
           buildingItem = true;
           try {
-            currentItem.email = emailRegex.exec(row)[0] || currentItem.email;
+            currentItem.recipientEmail = emailRegex.exec(row)[0] || currentItem.recipientEmail;
+            currentItem.email = currentItem.recipientEmail;
           } catch (e) {
             // ignore
           }
