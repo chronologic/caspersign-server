@@ -63,6 +63,7 @@ export interface SignatureSummary {
   signatureUid: string;
   ip: string;
   email: string;
+  recipientEmail: string;
   name: string;
   completed: boolean;
   payload?: string;
