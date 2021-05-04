@@ -44,14 +44,17 @@ export class Document {
   @OneToMany((_type) => DocumentHash, (docHash) => docHash.document, { onDelete: 'SET NULL', nullable: true })
   docHashes: DocumentHash[];
 
-  @Column()
-  userId: number;
-
   @ManyToOne((_type) => User, (user) => user.docs, { onDelete: 'SET NULL', nullable: true })
   user: User;
 
+  @Column()
+  userId: number;
+
   @OneToMany((_type) => Signature, (signature) => signature.document, { onDelete: 'SET NULL', nullable: true })
   signatures: Signature[];
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  originalHash: string;
 
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 50, transformer: lowercaseTransformer })

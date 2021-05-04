@@ -161,6 +161,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
       'd."documentUid" as "documentUid"',
       'd.title as "title"',
       'd.status as "status"',
+      'd."originalHash" as "originalHash"',
       'd."createDate" as "createdAt"',
       's."signatureUid" as "signatureUid"',
       's.ip as "ip"',
@@ -205,6 +206,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
       title: first.title,
       status: first.status,
       createdAt: first.createdAt,
+      originalHash: first.originalHash,
       signatures,
     };
 
@@ -261,21 +263,21 @@ export async function sendForSignatures(user: User, data: SignatureRequestReques
     subject: data.title,
     signing_redirect_url: POSTSIGN_REDIRECT_URL,
   } as any);
+
+  let originalHash = null;
+  if (data?.files[0]) {
+    const file = await readFilePromise(data?.files[0]);
+    originalHash = sha256Hex(file);
+  }
+
   const doc = await saveDocument({
     documentUid: signature_request.signature_request_id,
     status: Document.Status.OUT_FOR_SIGNATURE,
     title: signature_request.title,
     userId: user.id,
+    originalHash,
   });
 
-  // can't do this either because if same document is reused then the hash will be the same
-  // which will create lookup collisions
-  // this should be stored in a different place
-  // if (data?.files[0]) {
-  //   const file = await readFilePromise(data?.files[0]);
-  //   const hash = sha256Hex(file);
-  //   await getAndUpdateHashes(doc.documentUid, [hash]);
-  // }
   // this won't work here because "Files are still being processed. Please try again later."
   // const file = await hs.downloadFile(signature_request.signature_request_id);
   // const hash = sha256Hex(file);

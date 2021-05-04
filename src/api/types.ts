@@ -30,6 +30,7 @@ export interface DocumentSummary {
   title: string;
   status: Document['Status'];
   createdAt: string;
+  originalHash: string;
   signatures: SignatureSummary[];
 }
 
