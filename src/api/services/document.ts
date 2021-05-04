@@ -439,8 +439,12 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
     }
 
     if (sig.completed) {
+      let description = `Signed on the blockchain by ${sig.name} (${sig.recipientEmail})`;
+      if (sig.recipientEmail !== sig.email) {
+        description += ` using ${sig.email}`;
+      }
       const sigHistory: DocumentHistory = {
-        description: `Signed on the blockchain by ${sig.name} (${sig.email})`,
+        description,
         email: sig.email,
         recipientEmail: sig.recipientEmail,
         type: DocumentHistoryType.SIGNED_ON_CHAIN,
