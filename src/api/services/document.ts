@@ -19,7 +19,7 @@ import {
 import { NotFoundError } from '../errors';
 import { readFilePromise, sha256Hex, sleep } from '../utils';
 import { createOauthClient, hsApp } from './hellosign';
-import { getAndUpdateHashes } from './documentHash';
+import { getAndUpdateHashes, getHashes } from './documentHash';
 import { saveSignatures } from './signature';
 import { storeSignatureTx } from './signatureTx';
 
@@ -68,7 +68,7 @@ export async function getDocumentDetails(
     const hash = sha256Hex(file);
     hashes = await getAndUpdateHashes(documentUid, [hash]);
   } else {
-    hashes = await getAndUpdateHashes(documentUid, []);
+    hashes = await getHashes(documentUid);
   }
 
   let history: DocumentHistory[] = [];
@@ -186,6 +186,8 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
   const docsWithDetails = orderedUids.map((uid) => {
     const rows = groups[uid];
     const first = rows[0];
+
+    console.log(first);
 
     const signatures = rows.map((row) => {
       const signatureDetails: SignatureSummary = {
@@ -454,7 +456,7 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
   return items;
 }
 
-export async function getHashes(hashOrSignatureId: string): Promise<string[]> {
+export async function getHashesByHashOrSignatureId(hashOrSignatureId: string): Promise<string[]> {
   const documentUid = await getDocumentUidFromHashOrSignatureId(hashOrSignatureId);
   const file = await hsApp.tryDownloadFile(documentUid);
   let hashes: string[] = [];
@@ -463,7 +465,7 @@ export async function getHashes(hashOrSignatureId: string): Promise<string[]> {
     const hash = sha256Hex(file);
     hashes = await getAndUpdateHashes(documentUid, [hash]);
   } else {
-    hashes = await getAndUpdateHashes(documentUid, []);
+    hashes = await getHashes(documentUid);
   }
 
   return hashes;

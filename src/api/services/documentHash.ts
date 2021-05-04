@@ -1,5 +1,9 @@
 import { Document, DocumentHash, getConnection } from '../../db';
 
+export async function getHashes(documentUid: string): Promise<string[]> {
+  return getAndUpdateHashes(documentUid, []);
+}
+
 export async function getAndUpdateHashes(documentUid: string, maybeNewHashes: string[]): Promise<string[]> {
   const connection = getConnection();
   const rawItems = await connection
