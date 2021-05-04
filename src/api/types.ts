@@ -55,6 +55,7 @@ export interface DocumentHistory {
   timestamp?: string;
   ip?: string;
   email: string;
+  recipientEmail: string;
   description: string;
   txHash?: string;
 }

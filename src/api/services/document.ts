@@ -392,7 +392,8 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
         // this way we'll get the last email address that appears in the message
         // some messages contain multiple emails and the last one seems to be the creator's email
         try {
-          currentItem.email = emailRegex.exec(row)[0] || currentItem.email;
+          currentItem.recipientEmail = emailRegex.exec(row)[0] || currentItem.recipientEmail;
+          currentItem.email = currentItem.recipientEmail;
         } catch (e) {
           // ignore
         }
@@ -440,6 +441,7 @@ function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: Docu
       const sigHistory: DocumentHistory = {
         description: `Signed on the blockchain by ${sig.name} (${sig.email})`,
         email: sig.email,
+        recipientEmail: sig.recipientEmail,
         type: DocumentHistoryType.SIGNED_ON_CHAIN,
         ip: sig.ip,
         timestamp: sig.signedAt,
