@@ -4,6 +4,7 @@ import fs from 'fs';
 import { CASPER_CHAIN_NAME, CASPER_EVENT_STORE_URL, CASPER_NODE_URL, CASPER_PK_PEM } from '../../env';
 import logger from '../../logger';
 import { getConnection, SignatureTx } from '../../db';
+import { SignatureInfoSigned } from '../types';
 
 const client = new CasperClient(CASPER_NODE_URL, CASPER_EVENT_STORE_URL);
 
@@ -18,8 +19,8 @@ const keypair = client.loadKeyPairFromPrivateFile(casperPkPath, Keys.SignatureAl
 
 logger.info(`Casper wallet is ${keypair.accountHex()}`);
 
-export async function storeSignatureTx(signatureId: number, payload: string): Promise<string> {
-  const txHash = await storePayloadOnChain(payload);
+export async function storeSignatureTx(signatureId: number, signatureInfo: SignatureInfoSigned): Promise<string> {
+  const txHash = await storeSignatureInfoOnChain(signatureInfo);
   const connection = getConnection();
   // TODO: wait for tx to be confirmed
   await connection
@@ -30,12 +31,41 @@ export async function storeSignatureTx(signatureId: number, payload: string): Pr
 }
 
 // TODO: fix tx deployment
-async function storePayloadOnChain(payload: string): Promise<string> {
+async function storeSignatureInfoOnChain(signatureInfo: SignatureInfoSigned): Promise<string> {
   const deployParams = new DeployUtil.DeployParams(keypair.publicKey, CASPER_CHAIN_NAME);
   const session = DeployUtil.ExecutableDeployItem.newTransfer('0', keypair.publicKey);
   const payment = DeployUtil.standardPayment('0');
   const deploy = DeployUtil.makeDeploy(deployParams, session, payment);
-  const signatureDeploy = DeployUtil.addArgToDeploy(deploy, 'signature', CLValue.string(payload));
+  let signatureDeploy = DeployUtil.addArgToDeploy(deploy, 'verifier', CLValue.string(signatureInfo.verifier));
+  signatureDeploy = DeployUtil.addArgToDeploy(signatureDeploy, 'signerHash', CLValue.string(signatureInfo.signerHash));
+  signatureDeploy = DeployUtil.addArgToDeploy(
+    signatureDeploy,
+    'recipientHash',
+    CLValue.string(signatureInfo.recipientHash)
+  );
+  signatureDeploy = DeployUtil.addArgToDeploy(signatureDeploy, 'ipHash', CLValue.string(signatureInfo.ipHash));
+  signatureDeploy = DeployUtil.addArgToDeploy(signatureDeploy, 'timestamp', CLValue.u64(signatureInfo.timestamp));
+  signatureDeploy = DeployUtil.addArgToDeploy(
+    signatureDeploy,
+    'originalDocumentHash',
+    CLValue.string(signatureInfo.originalDocumentHash)
+  );
+  signatureDeploy = DeployUtil.addArgToDeploy(
+    signatureDeploy,
+    'otherSignatures',
+    CLValue.stringList(signatureInfo.otherSignatures)
+  );
+  signatureDeploy = DeployUtil.addArgToDeploy(
+    signatureDeploy,
+    'documentHashes',
+    CLValue.stringList(signatureInfo.documentHashes)
+  );
+  signatureDeploy = DeployUtil.addArgToDeploy(
+    signatureDeploy,
+    'signerPubkey',
+    CLValue.string(signatureInfo.signerPubkey)
+  );
+  signatureDeploy = DeployUtil.addArgToDeploy(signatureDeploy, 'signature', CLValue.string(signatureInfo.signature));
   const signedDeploy = DeployUtil.signDeploy(signatureDeploy, keypair);
   // const txHash = await client.putDeploy(signedDeploy);
 

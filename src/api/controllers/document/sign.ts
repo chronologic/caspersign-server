@@ -4,8 +4,7 @@ import { requestMiddleware } from '../../middleware';
 import { documentService } from '../../services';
 
 const sign: RequestHandler = async (req, res) => {
-  // TODO: validate req.body
-  const doc = await documentService.sign(req.ip, req.body);
+  const doc = await documentService.sign(req.body.signerInfo, req.body.signatureInfo);
 
   res.send(doc);
 };

@@ -91,28 +91,21 @@ export interface SignerInfo {
   signatureUid: string;
   verifier: string;
   email: string;
-  documentHashes: string[];
-  payload: string;
+  ip: string;
 }
 
 export interface SignatureInfo {
-  /** signer verifier (torus) */
-  v: string;
-  /** signer hashed email */
-  e: string;
-  /** recipient hashed email */
-  r: string;
-  /** signer hashed IP */
-  i: string;
-  /** timestamp */
-  t: number;
-  /** document hashes */
-  h: string[];
-  /** signer pubkey */
-  p: string;
+  verifier: string;
+  signerHash: string;
+  recipientHash: string;
+  ipHash: string;
+  timestamp: number;
+  originalDocumentHash: string;
+  otherSignatures: string[];
+  documentHashes: string[];
+  signerPubkey: string;
 }
 
 export interface SignatureInfoSigned extends SignatureInfo {
-  /** signature */
-  s: string;
+  signature: string;
 }

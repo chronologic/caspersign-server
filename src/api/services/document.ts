@@ -12,6 +12,7 @@ import {
   DocumentListParams,
   DocumentSummary,
   PaginatedDocuments,
+  SignatureInfoSigned,
   SignatureSummary,
   SignerInfo,
 } from '../types';
@@ -298,26 +299,23 @@ export async function saveDocument(doc: Partial<Document>): Promise<Document> {
   return createdDoc;
 }
 
-export async function sign(
-  ip: string,
-  { documentUid, email, documentHashes, payload, signatureUid, verifier }: SignerInfo
-): Promise<void> {
+export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoSigned): Promise<void> {
   // TODO: add checks of hashes, payload etc
-  await getDocumentByUid(documentUid);
+  await getDocumentByUid(signerInfo.documentUid);
   const connection = getConnection();
-  const sig = await connection.createEntityManager().findOne(Signature, { signatureUid });
+  const sig = await connection.createEntityManager().findOne(Signature, { signatureUid: signerInfo.signatureUid });
   await saveSignatures([
     {
       ...sig,
-      ip,
-      email,
+      ip: signerInfo.ip,
+      email: signerInfo.email,
       status: Signature.Status.SIGNED,
-      payload,
-      verifier,
+      payload: JSON.stringify(signatureInfo),
+      verifier: signerInfo.verifier,
     },
   ]);
-  await getAndUpdateHashes(documentUid, documentHashes);
-  await storeSignatureTx(sig.id, payload);
+  await getAndUpdateHashes(signerInfo.documentUid, signatureInfo.documentHashes);
+  await storeSignatureTx(sig.id, signatureInfo);
 }
 
 export async function getDocumentHistory(file: Buffer, signatures: SignatureSummary[]): Promise<DocumentHistory[]> {
