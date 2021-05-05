@@ -19,6 +19,7 @@ app.use(
   '/ip',
   proxy('https://ipapi.co', {
     proxyReqPathResolver: () => '/json',
+    preserveHostHdr: true,
   })
 );
 
