@@ -19,7 +19,13 @@ app.use(
   '/ip',
   proxy('https://ipapi.co', {
     proxyReqPathResolver: () => '/json',
-    preserveHostHdr: true,
+    userResHeaderDecorator(headers, userReq, userRes, proxyReq, proxyRes) {
+      console.log(userReq.ip, proxyReq.ip);
+      console.log(headers);
+      // eslint-disable-next-line no-param-reassign
+      headers['x-forwarded-for'] = userReq.ip;
+      return headers;
+    },
   })
 );
 
