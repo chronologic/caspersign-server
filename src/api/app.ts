@@ -3,7 +3,6 @@ import compression from 'compression';
 import morgan from 'morgan';
 import cors from 'cors';
 import express, { Request, Response, NextFunction } from 'express';
-import proxy from 'express-http-proxy';
 import formData from 'express-form-data';
 import requestIp from 'request-ip';
 
@@ -20,22 +19,6 @@ app.use(compression());
 
 app.use(requestIp.mw());
 
-app.use(
-  '/ip',
-  proxy('https://ipapi.co', {
-    proxyReqPathResolver: () => '/json',
-    userResHeaderDecorator(headers, userReq, userRes, proxyReq, proxyRes) {
-      console.log(userReq.ip, proxyReq.ip);
-      console.log(userReq.headers, proxyReq.headers);
-      console.log(userReq.clientIp, proxyReq.clientIp);
-      // eslint-disable-next-line no-param-reassign
-      headers['x-forwarded-for'] = userReq.ip;
-      console.log(headers);
-      return headers;
-    },
-  })
-);
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(formData.parse({ autoClean: true }));
@@ -46,8 +29,6 @@ app.set('port', PORT);
 app.use(routes);
 
 app.use((err: ApplicationError, req: Request, res: Response, next: NextFunction) => {
-  console.log(req.headers);
-
   if (res.headersSent) {
     return next(err);
   }

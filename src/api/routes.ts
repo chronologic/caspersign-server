@@ -15,4 +15,8 @@ router.post('/documents/:uid/sign', documentController.sign);
 router.get('/documents', authMiddleware, documentController.list);
 router.post('/documents', authMiddleware, documentController.send);
 
+router.get('/ip', (req, res) => {
+  res.send({ ip: req.clientIp });
+});
+
 export default router;
