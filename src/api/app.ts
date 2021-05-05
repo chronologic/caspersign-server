@@ -5,6 +5,7 @@ import cors from 'cors';
 import express, { Request, Response, NextFunction } from 'express';
 import proxy from 'express-http-proxy';
 import formData from 'express-form-data';
+import requestIp from 'request-ip';
 
 import { LOG_LEVEL, PORT } from '../env';
 import { ApplicationError } from './errors';
@@ -12,8 +13,12 @@ import routes from './routes';
 
 const app = express();
 
+app.set('trust proxy', true);
+
 app.use(cors());
 app.use(compression());
+
+app.use(requestIp.mw());
 
 app.use(
   '/ip',
@@ -21,9 +26,11 @@ app.use(
     proxyReqPathResolver: () => '/json',
     userResHeaderDecorator(headers, userReq, userRes, proxyReq, proxyRes) {
       console.log(userReq.ip, proxyReq.ip);
-      console.log(headers);
+      console.log(userReq.headers, proxyReq.headers);
+      console.log(userReq.clientIp, proxyReq.clientIp);
       // eslint-disable-next-line no-param-reassign
       headers['x-forwarded-for'] = userReq.ip;
+      console.log(headers);
       return headers;
     },
   })
@@ -39,6 +46,8 @@ app.set('port', PORT);
 app.use(routes);
 
 app.use((err: ApplicationError, req: Request, res: Response, next: NextFunction) => {
+  console.log(req.headers);
+
   if (res.headersSent) {
     return next(err);
   }
