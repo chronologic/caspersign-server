@@ -358,7 +358,7 @@ function extractPdfAuditRows(pdfJson: any): string[] {
 
 function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
   const dateRegex = /[0-9]{1,2} \/ [0-9]{1,2} \/ [0-9]{4}/;
-  const emailRegex = /([+a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i;
+  const emailRegex = /([+a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
   const items: DocumentHistory[] = [];
 
   let buildingItem = false;
@@ -392,7 +392,7 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
         // this way we'll get the last email address that appears in the message
         // some messages contain multiple emails and the last one seems to be the creator's email
         try {
-          currentItem.recipientEmail = emailRegex.exec(row)[0] || currentItem.recipientEmail;
+          currentItem.recipientEmail = [...row.matchAll(emailRegex)][0][0] || currentItem.recipientEmail;
           currentItem.email = currentItem.recipientEmail;
         } catch (e) {
           // ignore
@@ -407,7 +407,7 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
           };
           buildingItem = true;
           try {
-            currentItem.recipientEmail = emailRegex.exec(row)[0] || currentItem.recipientEmail;
+            currentItem.recipientEmail = [...row.matchAll(emailRegex)][0][0] || currentItem.recipientEmail;
             currentItem.email = currentItem.recipientEmail;
           } catch (e) {
             // ignore
