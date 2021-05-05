@@ -358,7 +358,6 @@ function extractPdfAuditRows(pdfJson: any): string[] {
 
 function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
   const dateRegex = /[0-9]{1,2} \/ [0-9]{1,2} \/ [0-9]{4}/;
-  const emailRegex = /([+a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
   const items: DocumentHistory[] = [];
 
   let buildingItem = false;
@@ -392,7 +391,7 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
         // this way we'll get the last email address that appears in the message
         // some messages contain multiple emails and the last one seems to be the creator's email
         try {
-          currentItem.recipientEmail = [...row.matchAll(emailRegex)][0][0] || currentItem.recipientEmail;
+          currentItem.recipientEmail = getLastEmail(row) || currentItem.recipientEmail;
           currentItem.email = currentItem.recipientEmail;
         } catch (e) {
           // ignore
@@ -407,7 +406,7 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
           };
           buildingItem = true;
           try {
-            currentItem.recipientEmail = [...row.matchAll(emailRegex)][0][0] || currentItem.recipientEmail;
+            currentItem.recipientEmail = getLastEmail(row) || currentItem.recipientEmail;
             currentItem.email = currentItem.recipientEmail;
           } catch (e) {
             // ignore
@@ -418,6 +417,27 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
   }
 
   return items;
+}
+
+function getLastEmail(str: string): string {
+  const emailRegex = /([+a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+
+  const matches = [];
+  let prevMatchesCount = -1;
+
+  try {
+    while (matches.length !== prevMatchesCount) {
+      const match = emailRegex.exec(str)[0];
+      if (match) {
+        matches.push(match);
+      }
+      prevMatchesCount += 1;
+    }
+  } catch {
+    //
+  }
+
+  return matches.reverse()[0];
 }
 
 function mergeSignaturesAndHistory(signatures: SignatureSummary[], history: DocumentHistory[]): DocumentHistory[] {
