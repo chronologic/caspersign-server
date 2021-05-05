@@ -50,16 +50,20 @@ async function storeSignatureInfoOnChain(signatureInfo: SignatureInfoSigned): Pr
     'originalDocumentHash',
     CLValue.string(signatureInfo.originalDocumentHash)
   );
-  signatureDeploy = DeployUtil.addArgToDeploy(
-    signatureDeploy,
-    'otherSignatures',
-    CLValue.stringList(signatureInfo.otherSignatures)
-  );
-  signatureDeploy = DeployUtil.addArgToDeploy(
-    signatureDeploy,
-    'documentHashes',
-    CLValue.stringList(signatureInfo.documentHashes)
-  );
+  if (signatureInfo.otherSignatures?.length > 0) {
+    signatureDeploy = DeployUtil.addArgToDeploy(
+      signatureDeploy,
+      'otherSignatures',
+      CLValue.stringList(signatureInfo.otherSignatures)
+    );
+  }
+  if (signatureInfo.documentHashes?.length > 0) {
+    signatureDeploy = DeployUtil.addArgToDeploy(
+      signatureDeploy,
+      'documentHashes',
+      CLValue.stringList(signatureInfo.documentHashes)
+    );
+  }
   signatureDeploy = DeployUtil.addArgToDeploy(
     signatureDeploy,
     'signerPubkey',
