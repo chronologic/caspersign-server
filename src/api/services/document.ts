@@ -325,8 +325,11 @@ export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoS
 export async function getDocumentHistory(file: Buffer, signatures: SignatureSummary[]): Promise<DocumentHistory[]> {
   const pdfJson = await parsePdf(file);
   const rows = extractPdfAuditRows(pdfJson);
+  console.log(rows);
   const historyItems = pdfRowsToHistoryItems(rows);
+  console.log(historyItems);
   const allHistory = mergeSignaturesAndHistory(signatures, historyItems);
+  console.log(allHistory);
 
   return allHistory;
 }
@@ -342,7 +345,6 @@ async function parsePdf(pdf: Buffer): Promise<any> {
 }
 
 function extractPdfAuditRows(pdfJson: any): string[] {
-  const auditDateFormat = 'MM / DD / YYYY';
   const rows: string[] = [];
   pdfJson.formImage.Pages.forEach((page: any) => {
     page.Texts.forEach((T: any) => {
@@ -352,8 +354,21 @@ function extractPdfAuditRows(pdfJson: any): string[] {
       });
     });
   });
+  const auditStartTextRegex = /Sent for signature.*/;
+  const auditStartIndex = lastIndexOfRegex(rows, auditStartTextRegex);
 
-  return rows.slice(rows.lastIndexOf(auditDateFormat));
+  return rows.slice(auditStartIndex);
+}
+
+function lastIndexOfRegex(rows: string[], regex: RegExp): number {
+  let lastIndex = -1;
+  rows.forEach((row, i) => {
+    if (regex.test(row)) {
+      lastIndex = i;
+    }
+  });
+
+  return lastIndex;
 }
 
 function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
