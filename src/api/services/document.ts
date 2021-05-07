@@ -325,11 +325,8 @@ export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoS
 export async function getDocumentHistory(file: Buffer, signatures: SignatureSummary[]): Promise<DocumentHistory[]> {
   const pdfJson = await parsePdf(file);
   const rows = extractPdfAuditRows(pdfJson);
-  console.log(rows);
   const historyItems = pdfRowsToHistoryItems(rows);
-  console.log(historyItems);
   const allHistory = mergeSignaturesAndHistory(signatures, historyItems);
-  console.log(allHistory);
 
   return allHistory;
 }
@@ -355,7 +352,8 @@ function extractPdfAuditRows(pdfJson: any): string[] {
     });
   });
   const auditStartTextRegex = /Sent for signature.*/;
-  const auditStartIndex = lastIndexOfRegex(rows, auditStartTextRegex);
+  const dateTimeNumberOfRows = 2;
+  const auditStartIndex = lastIndexOfRegex(rows, auditStartTextRegex) - dateTimeNumberOfRows;
 
   return rows.slice(auditStartIndex);
 }
@@ -374,9 +372,6 @@ function lastIndexOfRegex(rows: string[], regex: RegExp): number {
 function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
   const dateRegex = /[0-9]{1,2} \/ [0-9]{1,2} \/ [0-9]{4}/;
   const items: DocumentHistory[] = [];
-
-  let buildingItem = false;
-  let currentItem: Partial<DocumentHistory> = {};
   const events = {
     'Sent for signature': DocumentHistoryType.SENT,
     'Viewed by': DocumentHistoryType.VIEWED,
@@ -384,51 +379,52 @@ function pdfRowsToHistoryItems(rows: string[]): DocumentHistory[] {
     'The document has been completed': DocumentHistoryType.COMPLETED,
   };
 
-  for (const [i, row] of rows.entries()) {
-    if (buildingItem) {
-      if (ipRegex().test(row)) {
-        // eslint-disable-next-line prefer-destructuring
-        currentItem.ip = row.match(ipRegex())[0];
-
-        if (!dateRegex.test(rows[i + 1])) {
-          buildingItem = false;
-          items.push(currentItem as DocumentHistory);
-          currentItem = {};
-        }
-      } else if (dateRegex.test(row)) {
-        const dateTime = `${row} ${rows[i + 1]}`;
-        currentItem.timestamp = moment.tz(dateTime, 'MM / DD / YYYY HH:mm:ss', 'UTC').toISOString();
-        buildingItem = false;
-        items.push(currentItem as DocumentHistory);
-        currentItem = {};
-      } else {
-        currentItem.description += ` ${row}`;
-        // this way we'll get the last email address that appears in the message
-        // some messages contain multiple emails and the last one seems to be the creator's email
-        try {
-          currentItem.recipientEmail = getLastEmail(row) || currentItem.recipientEmail;
-          currentItem.email = currentItem.recipientEmail;
-        } catch (e) {
-          // ignore
-        }
-      }
-    } else {
-      for (const [text, entryType] of Object.entries(events)) {
-        if (row.startsWith(text)) {
-          currentItem = {
-            description: row,
-            type: entryType,
-          };
-          buildingItem = true;
-          try {
-            currentItem.recipientEmail = getLastEmail(row) || currentItem.recipientEmail;
-            currentItem.email = currentItem.recipientEmail;
-          } catch (e) {
-            // ignore
-          }
-        }
+  let i = 0;
+  while (i < rows.length) {
+    const row = rows[i];
+    for (const [text, entryType] of Object.entries(events)) {
+      if (row.startsWith(text)) {
+        const [description, afterDescIndex] = extractDescription(rows, i);
+        const email = getLastEmail(description);
+        const ip = extractIp(rows, afterDescIndex);
+        const timestamp = extractTimestamp(rows, i);
+        items.push({
+          type: entryType,
+          description,
+          email,
+          recipientEmail: email,
+          ip,
+          timestamp,
+        });
       }
     }
+    i += 1;
+  }
+
+  function extractDescription(rows: string[], i: number): [string, number] {
+    let description = rows[i];
+    let j = i + 1;
+    while (!ipRegex().test(rows[j]) && !dateRegex.test(rows[j])) {
+      description += ` ${rows[j]}`;
+      j += 1;
+    }
+    return [description, j];
+  }
+
+  function extractIp(rows: string[], i: number): string {
+    if (ipRegex().test(rows[i])) {
+      return rows[i].match(ipRegex())[0];
+    }
+    return undefined;
+  }
+
+  function extractTimestamp(rows: string[], i: number): string {
+    if (dateRegex.test(rows[i - 2])) {
+      const dateTime = `${rows[i - 2]} ${rows[i - 1]}`;
+      return moment.tz(dateTime, 'MM / DD / YYYY HH:mm:ss', 'UTC').toISOString();
+    }
+
+    return undefined;
   }
 
   return items;
