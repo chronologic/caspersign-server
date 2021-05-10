@@ -1,12 +1,26 @@
-import { CasperClient, Keys, DeployUtil, CLValue } from 'casper-client-sdk';
+import {
+  CasperClient,
+  Keys,
+  DeployUtil,
+  CLValue,
+  CasperServiceByJsonRPC,
+  RuntimeArgs,
+  PublicKey,
+  URef,
+} from 'casper-client-sdk';
 import fs from 'fs';
+import { exec } from 'child_process';
+import util from 'util';
 
 import { CASPER_CHAIN_NAME, CASPER_EVENT_STORE_URL, CASPER_NODE_URL, CASPER_PK_PEM } from '../../env';
 import logger from '../../logger';
 import { getConnection, SignatureTx } from '../../db';
 import { SignatureInfoSigned } from '../types';
 
+const execP = util.promisify(exec);
+
 const client = new CasperClient(CASPER_NODE_URL, CASPER_EVENT_STORE_URL);
+const clientRpc = new CasperServiceByJsonRPC(CASPER_NODE_URL);
 
 // create new wallet
 // const res = client.newKeyPair(Keys.SignatureAlgorithm.Ed25519);
@@ -31,7 +45,7 @@ export async function storeSignatureTx(signatureId: number, signatureInfo: Signa
 }
 
 // TODO: fix tx deployment
-async function storeSignatureInfoOnChain(signatureInfo: SignatureInfoSigned): Promise<string> {
+export async function storeSignatureInfoOnChain(signatureInfo: SignatureInfoSigned): Promise<string> {
   const deployParams = new DeployUtil.DeployParams(keypair.publicKey, CASPER_CHAIN_NAME);
   const session = DeployUtil.ExecutableDeployItem.newTransfer('0', keypair.publicKey);
   const payment = DeployUtil.standardPayment('0');
@@ -79,3 +93,10 @@ async function storeSignatureInfoOnChain(signatureInfo: SignatureInfoSigned): Pr
   // return txHash;
   return (DeployUtil.deployToJson(signedDeploy).deploy as any).hash;
 }
+
+async function execCommand() {
+  const res = await execP('casper-client --help');
+  console.log(res);
+}
+
+execCommand();
