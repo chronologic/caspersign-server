@@ -14,8 +14,7 @@
     "start": "node dist/index.js",
     "db-sync": "cross-env DB_SYNC=true ts-node ./src/db/dbSync.ts",
     "fix-lint": "./node_modules/eslint/bin/eslint.js  src --ext .ts --fix",
-    "build-release": "npm run build && mkdir -p dist_temp && cp -r dist/* dist_temp/ && git checkout release && rimraf dist && mkdir -p dist && cp -r dist_temp/* dist/ && rimraf dist_temp",
-    "postinstall": "cargo install casper-client"
+    "build-release": "npm run build && mkdir -p dist_temp && cp -r dist/* dist_temp/ && git checkout release && rimraf dist && mkdir -p dist && cp -r dist_temp/* dist/ && rimraf dist_temp"
   },
   "dependencies": {
     "@hapi/joi": "17.1.1",
