@@ -90,7 +90,7 @@ async function execCommand() {
   console.log(res);
 }
 
-// execCommand();
+execCommand();
 
 // const mainPurseUref = await client.getAccountMainPurseUref(keypair.publicKey);
 // import { CasperClient, Keys, DeployUtil, CasperServiceByJsonRPC } from 'casper-client-sdk';
