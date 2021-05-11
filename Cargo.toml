@@ -1,0 +1,13 @@
+[package]
+name = "caspersign-server"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+casper-client = "1.1.1"
+
+[[bin]]
+name = "dummy"
+path = "rssrc/main.rs"
+test = false
+bench = false

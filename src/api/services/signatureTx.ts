@@ -1,13 +1,4 @@
-import {
-  CasperClient,
-  Keys,
-  DeployUtil,
-  CLValue,
-  CasperServiceByJsonRPC,
-  RuntimeArgs,
-  PublicKey,
-  URef,
-} from 'casper-client-sdk';
+import { CasperClient, Keys, DeployUtil, CasperServiceByJsonRPC, PublicKey, CLValue } from 'casper-client-sdk';
 import fs from 'fs';
 import { exec } from 'child_process';
 import util from 'util';
@@ -19,7 +10,7 @@ import { SignatureInfoSigned } from '../types';
 
 const execP = util.promisify(exec);
 
-const client = new CasperClient(CASPER_NODE_URL, CASPER_EVENT_STORE_URL);
+const client = new CasperClient(CASPER_NODE_URL);
 const clientRpc = new CasperServiceByJsonRPC(CASPER_NODE_URL);
 
 // create new wallet
@@ -47,7 +38,7 @@ export async function storeSignatureTx(signatureId: number, signatureInfo: Signa
 // TODO: fix tx deployment
 export async function storeSignatureInfoOnChain(signatureInfo: SignatureInfoSigned): Promise<string> {
   const deployParams = new DeployUtil.DeployParams(keypair.publicKey, CASPER_CHAIN_NAME);
-  const session = DeployUtil.ExecutableDeployItem.newTransfer('0', keypair.publicKey);
+  const session = DeployUtil.ExecutableDeployItem.newTransfer('0', keypair.publicKey, undefined, 123);
   const payment = DeployUtil.standardPayment('0');
   const deploy = DeployUtil.makeDeploy(deployParams, session, payment);
   let signatureDeploy = DeployUtil.addArgToDeploy(deploy, 'verifier', CLValue.string(signatureInfo.verifier));
@@ -99,4 +90,23 @@ async function execCommand() {
   console.log(res);
 }
 
-execCommand();
+// execCommand();
+
+// const mainPurseUref = await client.getAccountMainPurseUref(keypair.publicKey);
+// import { CasperClient, Keys, DeployUtil, CasperServiceByJsonRPC } from 'casper-client-sdk';
+
+// async function transfer() {
+//   // const client = new CasperClient('http://135.181.39.103:7777/rpc');
+//   // keypair for 0181dd6e2f7ed815c0246f210aa169882f8e821d874a43f817f77a795147beed61
+//   const deployParams = new DeployUtil.DeployParams(keypair.publicKey, 'casper-test', 2, 1e6, [], new Date().getTime());
+//   const target = PublicKey.fromHex('0190c434129ecbaeb34d33185ab6bf97c3c493fc50121a56a9ed8c4c52855b5ac1');
+//   const transferParams = DeployUtil.ExecutableDeployItem.newTransfer(3e9, target, undefined, 123);
+//   const payment = DeployUtil.standardPayment(1e7);
+//   const deploy = DeployUtil.makeDeploy(deployParams, transferParams, payment);
+//   const signedDeploy = DeployUtil.signDeploy(deploy, keypair);
+//   const txHash = await client.putDeploy(signedDeploy);
+
+//   return txHash;
+// }
+
+// transfer().then(console.log).catch(console.error);
