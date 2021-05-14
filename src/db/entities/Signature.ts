@@ -61,7 +61,7 @@ export class Signature {
   @Column({ type: 'varchar', length: 20 })
   status: Status;
 
-  @Column({ type: 'varchar', length: 30, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   ip: string;
 
   @Column({ type: 'varchar', length: 120 })
