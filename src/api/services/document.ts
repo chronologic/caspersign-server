@@ -17,7 +17,7 @@ import {
   SignerInfo,
 } from '../types';
 import { NotFoundError } from '../errors';
-import { readFilePromise, sha256Hex, sleep } from '../utils';
+import { readFilePromise, sha256Hex } from '../utils';
 import { createOauthClient, hsApp } from './hellosign';
 import { getAndUpdateHashes, getHashes } from './documentHash';
 import { saveSignatures } from './signature';
@@ -319,7 +319,12 @@ export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoS
     },
   ]);
   await getAndUpdateHashes(signerInfo.documentUid, signatureInfo.documentHashes);
-  await storeSignatureTx(sig.id, signatureInfo);
+  await storeSignatureTx({
+    signatureId: sig.id,
+    documentUid: signerInfo.documentUid,
+    email: signerInfo.email,
+    signatureInfo,
+  });
 }
 
 export async function getDocumentHistory(file: Buffer, signatures: SignatureSummary[]): Promise<DocumentHistory[]> {

@@ -112,3 +112,10 @@ export interface SignatureInfo {
 export interface SignatureInfoSigned extends SignatureInfo {
   signature: string;
 }
+
+export interface CasperSdkMsg {
+  id: number;
+  method: 'sendTransfer' | 'storeSignature';
+  payload?: any;
+  error?: any;
+}
