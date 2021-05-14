@@ -1,6 +1,6 @@
 import { getConnection, SignatureTx } from '../../db';
-import { SignatureInfoSigned } from '../types';
-import { storeSignature as storeSignatureOnChain } from './casperSdk';
+import { SignatureDetails, SignatureInfoSigned } from '../types';
+import { getSignature, storeSignature as storeSignatureOnChain } from './casperSdk';
 
 export async function storeSignatureTx({
   signatureId,
@@ -25,4 +25,11 @@ export async function storeSignatureTx({
     .insert(SignatureTx, { signatureId, status: SignatureTx.Status.CONFIRMED, txHash });
 
   return txHash;
+}
+
+export async function validateSignature(documentUid: string, sig: SignatureDetails): Promise<void> {
+  const blockchainSig = await getSignature({ documentUid, email: sig.recipientEmail });
+  if (JSON.stringify(blockchainSig) !== sig.payload) {
+    throw new Error(`Signature invalid for ${documentUid}:${sig.recipientEmail}`);
+  }
 }

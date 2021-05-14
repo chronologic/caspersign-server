@@ -21,9 +21,20 @@ import { readFilePromise, sha256Hex } from '../utils';
 import { createOauthClient, hsApp } from './hellosign';
 import { getAndUpdateHashes, getHashes } from './documentHash';
 import { saveSignatures } from './signature';
-import { storeSignatureTx } from './signatureTx';
+import { storeSignatureTx, validateSignature } from './signatureTx';
 
 const PdfParser = require('pdf2json');
+
+export async function validate(hashOrSignatureId: string): Promise<DocumentDetails> {
+  const docDetails = await getDocumentDetails(hashOrSignatureId, true);
+  for (const sig of docDetails.signatures) {
+    if (sig.completed) {
+      await validateSignature(docDetails.documentUid, sig);
+    }
+  }
+
+  return docDetails;
+}
 
 export async function getDocumentDetails(
   hashOrSignatureId: string,
@@ -322,7 +333,7 @@ export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoS
   await storeSignatureTx({
     signatureId: sig.id,
     documentUid: signerInfo.documentUid,
-    email: signerInfo.email,
+    email: sig.recipientEmail,
     signatureInfo,
   });
 }

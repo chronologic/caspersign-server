@@ -4,7 +4,7 @@ import { requestMiddleware } from '../../middleware';
 import { documentService } from '../../services';
 
 const validate: RequestHandler = async (req, res) => {
-  const doc = await documentService.getDocumentDetails(req.params.uidOrHash, true);
+  const doc = await documentService.validate(req.params.uidOrHash);
 
   res.send(doc);
 };

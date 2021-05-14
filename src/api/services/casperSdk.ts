@@ -1,11 +1,46 @@
 import { fork } from 'child_process';
 
+import { MINUTE_MILLIS } from '../../constants';
+import { CASPER_CONTRACT_HASH } from '../../env';
 import { CasperSdkMsg, SignatureInfoSigned } from '../types';
+import { createTimedCache, sha256Hex } from '../utils';
+import { jsonRpcClient } from './casperSdkClient';
 
 // execute casper sdk deploys in a separate process because it fails when typeorm package is in scope
 // this is probably due to typeorm modifying some global object casper sdk relies on
 const forked = fork(`${__dirname}/casperSdkChild`);
+
 let msgId = 0;
+const cache = createTimedCache(MINUTE_MILLIS);
+
+export async function getSignature({
+  documentUid,
+  email,
+}: {
+  documentUid: string;
+  email: string;
+}): Promise<SignatureInfoSigned> {
+  const sigKey = sha256Hex(`${documentUid}:${email}`);
+  const stateRootHash = await getStateRootHash();
+  const res = await jsonRpcClient.getBlockState(stateRootHash, CASPER_CONTRACT_HASH, [sigKey]);
+
+  return JSON.parse(res.CLValue.asString()) as SignatureInfoSigned;
+}
+
+async function getStateRootHash(): Promise<string> {
+  const stateRootHashKey = 'stateRootHash';
+
+  if (cache.get(stateRootHashKey)) {
+    return cache.get(stateRootHashKey);
+  }
+
+  const latestBlock = await jsonRpcClient.getLatestBlockInfo();
+  const stateRootHash = await jsonRpcClient.getStateRootHash(latestBlock.block.hash);
+
+  cache.put(stateRootHashKey, stateRootHash);
+
+  return stateRootHash;
+}
 
 export async function sendTransfer(payload: { from: string; to: string; amount: number }) {
   return execInChild({ method: 'sendTransfer', payload });
