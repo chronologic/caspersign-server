@@ -78,7 +78,7 @@ async function storeSignature({
       signature: CLValue.string(JSON.stringify(signatureInfo)),
     })
   );
-  const payment = DeployUtil.standardPayment(3e9);
+  const payment = DeployUtil.standardPayment(1e9);
   const deploy = DeployUtil.makeDeploy(deployParams, session, payment);
   const signedDeploy = DeployUtil.signDeploy(deploy, keypair);
 

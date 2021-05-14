@@ -22,13 +22,19 @@ import { createOauthClient, hsApp } from './hellosign';
 import { getAndUpdateHashes, getHashes } from './documentHash';
 import { saveSignatures } from './signature';
 import { storeSignatureTx, validateSignature } from './signatureTx';
+import { MINUTE_MILLIS } from '../../constants';
 
 const PdfParser = require('pdf2json');
 
 export async function validate(hashOrSignatureId: string): Promise<DocumentDetails> {
   const docDetails = await getDocumentDetails(hashOrSignatureId, true);
+  const VALIDATION_THRESHOLD = 5 * MINUTE_MILLIS;
+
   for (const sig of docDetails.signatures) {
-    if (sig.completed) {
+    const now = new Date().getTime();
+    // allow some time for tx to be confirmed before verifying
+    const isAfterValidationThreshold = now - new Date(sig.signedAt).getTime() > VALIDATION_THRESHOLD;
+    if (sig.completed && isAfterValidationThreshold) {
       await validateSignature(docDetails.documentUid, sig);
     }
   }
