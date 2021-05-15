@@ -1,5 +1,7 @@
 import { getConnection, SignatureTx } from '../../db';
+import logger from '../../logger';
 import { SignatureDetails, SignatureInfoSigned } from '../types';
+import { sleep } from '../utils';
 import { getSignature, storeSignature as storeSignatureOnChain, waitForConfirmation } from './casperSdk';
 
 export async function storeSignatureTx({
@@ -27,12 +29,13 @@ export async function storeSignatureTx({
   return txHash;
 }
 
-async function confirmTx(hash: string, signatureId: number): Promise<void> {
+export async function confirmTx(hash: string, signatureId: number): Promise<void> {
   const connection = getConnection();
   let status = SignatureTx.Status.CONFIRMED;
   try {
     await waitForConfirmation(hash);
   } catch (e) {
+    logger.error(e);
     status = SignatureTx.Status.ERROR;
   } finally {
     await connection.createEntityManager().update(SignatureTx, { signatureId }, { status });

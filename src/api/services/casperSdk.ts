@@ -42,16 +42,23 @@ async function getStateRootHash(): Promise<string> {
   return stateRootHash;
 }
 
+// eslint-disable-next-line consistent-return
 export async function waitForConfirmation(hash: string): Promise<void> {
   try {
     const res = await jsonRpcClient.getDeployInfo(hash);
+
+    if (res.execution_results.length === 0) {
+      await sleep(15 * SECOND_MILLIS);
+      return waitForConfirmation(hash);
+    }
+
     if ((res.execution_results[0].result as any).Failure) {
       throw new Error((res.execution_results[0].result as any).Failure.error_message || `deploy ${hash} failed`);
     }
   } catch (e) {
     if (e.message?.includes('deploy not known')) {
       await sleep(15 * SECOND_MILLIS);
-      await waitForConfirmation(hash);
+      return waitForConfirmation(hash);
     }
     throw e;
   }
