@@ -325,6 +325,12 @@ export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoS
   await getDocumentByUid(signerInfo.documentUid);
   const connection = getConnection();
   const sig = await connection.createEntityManager().findOne(Signature, { signatureUid: signerInfo.signatureUid });
+  await storeSignatureTx({
+    signatureId: sig.id,
+    documentUid: signerInfo.documentUid,
+    email: sig.recipientEmail,
+    signatureInfo,
+  });
   await saveSignatures([
     {
       ...sig,
@@ -336,12 +342,6 @@ export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoS
     },
   ]);
   await getAndUpdateHashes(signerInfo.documentUid, signatureInfo.documentHashes);
-  await storeSignatureTx({
-    signatureId: sig.id,
-    documentUid: signerInfo.documentUid,
-    email: sig.recipientEmail,
-    signatureInfo,
-  });
 }
 
 export async function getDocumentHistory(file: Buffer, signatures: SignatureSummary[]): Promise<DocumentHistory[]> {
