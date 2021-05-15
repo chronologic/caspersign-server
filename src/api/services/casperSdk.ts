@@ -1,9 +1,9 @@
 import { fork } from 'child_process';
 
-import { MINUTE_MILLIS } from '../../constants';
+import { MINUTE_MILLIS, SECOND_MILLIS } from '../../constants';
 import { CASPER_CONTRACT_HASH } from '../../env';
 import { CasperSdkMsg, SignatureInfoSigned } from '../types';
-import { createTimedCache, sha256Hex } from '../utils';
+import { createTimedCache, sha256Hex, sleep } from '../utils';
 import { jsonRpcClient } from './casperSdkClient';
 
 // execute casper sdk deploys in a separate process because it fails when typeorm package is in scope
@@ -40,6 +40,21 @@ async function getStateRootHash(): Promise<string> {
   cache.put(stateRootHashKey, stateRootHash);
 
   return stateRootHash;
+}
+
+export async function waitForConfirmation(hash: string): Promise<void> {
+  try {
+    const res = await jsonRpcClient.getDeployInfo(hash);
+    if ((res.execution_results[0].result as any).Failure) {
+      throw new Error((res.execution_results[0].result as any).Failure.error_message || `deploy ${hash} failed`);
+    }
+  } catch (e) {
+    if (e.message?.includes('deploy not known')) {
+      await sleep(15 * SECOND_MILLIS);
+      await waitForConfirmation(hash);
+    }
+    throw e;
+  }
 }
 
 export async function sendTransfer(payload: { from: string; to: string; amount: number }) {

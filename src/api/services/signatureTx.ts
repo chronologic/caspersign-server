@@ -1,6 +1,6 @@
 import { getConnection, SignatureTx } from '../../db';
 import { SignatureDetails, SignatureInfoSigned } from '../types';
-import { getSignature, storeSignature as storeSignatureOnChain } from './casperSdk';
+import { getSignature, storeSignature as storeSignatureOnChain, waitForConfirmation } from './casperSdk';
 
 export async function storeSignatureTx({
   signatureId,
@@ -19,12 +19,24 @@ export async function storeSignatureTx({
     signatureInfo,
   });
   const connection = getConnection();
-  // TODO: wait for tx to be confirmed
   await connection
     .createEntityManager()
-    .insert(SignatureTx, { signatureId, status: SignatureTx.Status.CONFIRMED, txHash });
+    .insert(SignatureTx, { signatureId, status: SignatureTx.Status.BROADCASTED, txHash });
+  confirmTx(txHash, signatureId);
 
   return txHash;
+}
+
+async function confirmTx(hash: string, signatureId: number): Promise<void> {
+  const connection = getConnection();
+  let status = SignatureTx.Status.CONFIRMED;
+  try {
+    await waitForConfirmation(hash);
+  } catch (e) {
+    status = SignatureTx.Status.ERROR;
+  } finally {
+    await connection.createEntityManager().update(SignatureTx, { signatureId }, { status });
+  }
 }
 
 export async function validateSignature(documentUid: string, sig: SignatureDetails): Promise<void> {
