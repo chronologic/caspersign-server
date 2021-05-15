@@ -30,7 +30,7 @@ Below is a list of possible environment variables.
 | `CASPER_PK_PEM`         | `string`  |         | Casper account private key in PEM format                                                       |
 | `CASPER_NODE_URL`       | `string`  |         | URL pointing to Casper RPC node                                                                |
 | `CASPER_CHAIN_NAME`     | `string`  |         | `casper` / `casper-test` / ...                                                                 |
-| `CASPER_CONTRACT_HASH`  | `string`  |         | Hash of CasperSign smart contract                                                              |
+| `CASPER_CONTRACT_HASH`  | `string`  |         | Hash of [CasperSign smart contract](https://github.com/chronologic/caspersign-contract)        |
 | `POSTSIGN_REDIRECT_URL` | `string`  |         | URL pointing to [CasperSign validator](https://github.com/chronologic/caspersign-validator-ui) |
 
 ## :construction: Building
