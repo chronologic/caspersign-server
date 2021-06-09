@@ -193,7 +193,7 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
     .from(Document, 'd')
     .leftJoin(Signature, 's', 'd.id = s."documentId"')
     .leftJoin(SignatureTx, 'stx', 's.id = stx."signatureId"')
-    .where('d."documentUid" in (:...uids)', { uids })
+    .where('d."documentUid" in (:...uids)', { uids: [-1, ...uids] })
     .execute();
 
   const groups = groupBy(rawItems, 'documentUid');
