@@ -3,7 +3,7 @@ import HelloSign, { SignatureRequestRequestOptions } from 'hellosign-sdk';
 import moment from 'moment-timezone';
 import ipRegex from 'ip-regex';
 
-import { POSTSIGN_REDIRECT_URL } from '../../env';
+import { HS_TEST_MODE, POSTSIGN_REDIRECT_URL } from '../../env';
 import { Document, DocumentHash, getConnection, Signature, SignatureTx, User } from '../../db';
 import {
   DocumentDetails,
@@ -278,7 +278,7 @@ export async function sendForSignatures(user: User, data: SignatureRequestReques
 
   const { signature_request } = await hs.signatureRequest.send({
     ...data,
-    test_mode: 1,
+    test_mode: HS_TEST_MODE ? 1 : 0,
     subject: data.title,
     signing_redirect_url: POSTSIGN_REDIRECT_URL,
   } as any);
