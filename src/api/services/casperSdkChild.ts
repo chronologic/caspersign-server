@@ -30,7 +30,7 @@ process.on('message', async (msg: CasperSdkMsg) => {
   }
 });
 
-async function sendTransfer({ from, to, amount }: { from: string; to: string; amount: number }) {
+async function sendTransfer({ to, amount }: { to: string; amount: number }) {
   // for native-transfers payment price is fixed
   const paymentAmount = 10000000000;
   // transfer_id field in the request to tag the transaction and to correlate it to your back-end storage
@@ -46,14 +46,9 @@ async function sendTransfer({ from, to, amount }: { from: string; to: string; am
   const toPublicKey = PublicKey.fromHex(to);
 
   const session = DeployUtil.ExecutableDeployItem.newTransfer(amount, toPublicKey, null, id);
-  // console.log(session.asTransfer().toBytes().toString());
   const payment = DeployUtil.standardPayment(paymentAmount);
   const deploy = DeployUtil.makeDeploy(deployParams, session, payment);
   const signedDeploy = DeployUtil.signDeploy(deploy, keypair);
-
-  // we are sending the signed deploy
-  // const res = await casperClient.putDeploy(signedDeploy);
-  // console.log(res);
 
   const jsonFromDeploy = DeployUtil.deployToJson(signedDeploy);
   return jsonFromDeploy;

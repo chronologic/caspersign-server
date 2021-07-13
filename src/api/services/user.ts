@@ -30,8 +30,6 @@ export async function oauth(code: string, state: string): Promise<User> {
   const { account } = await hs.account.get();
   const user = await getUserByEmail(account.email_address);
 
-  // const ref: HsOauthResponse = (await hs.oauth.refreshToken({ refresh_token: res.refresh_token } as any)) as any;
-
   return saveUser({
     ...user,
     email: account.email_address,

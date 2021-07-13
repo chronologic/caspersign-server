@@ -236,9 +236,6 @@ export async function getDocumentsByUids(uids: string[]): Promise<DocumentSummar
 }
 
 export async function listDocuments(user: User, params: DocumentListParams): Promise<PaginatedDocuments> {
-  // const res = await hs.signatureRequest.list(params);
-  // const uids = res.signature_requests.map((item) => item.signature_request_id);
-
   const connection = getConnection();
 
   const q = connection
@@ -254,14 +251,6 @@ export async function listDocuments(user: User, params: DocumentListParams): Pro
   const total = await q.getCount();
   const uids = rawItems.map((row: any) => row.documentUid);
   const items = await getDocumentsByUids(uids);
-
-  // const listInfo: {
-  //   page: number;
-  //   // eslint-disable-next-line camelcase
-  //   num_pages: number;
-  //   // eslint-disable-next-line camelcase
-  //   num_results: number;
-  // } = (res as any).list_info;
 
   return {
     meta: {
@@ -297,7 +286,7 @@ export async function sendForSignatures(user: User, data: SignatureRequestReques
     originalHash,
   });
 
-  // this won't work here because "Files are still being processed. Please try again later."
+  // can't just hs.downloadFile here because "Files are still being processed. Please try again later."
   // const file = await hs.downloadFile(signature_request.signature_request_id);
   // const hash = sha256Hex(file);
   // await getAndUpdateHashes(doc.documentUid, [hash]);
@@ -321,7 +310,6 @@ export async function saveDocument(doc: Partial<Document>): Promise<Document> {
 }
 
 export async function sign(signerInfo: SignerInfo, signatureInfo: SignatureInfoSigned): Promise<void> {
-  // TODO: add checks of hashes, payload etc
   await getDocumentByUid(signerInfo.documentUid);
   const connection = getConnection();
   const sig = await connection.createEntityManager().findOne(Signature, { signatureUid: signerInfo.signatureUid });
