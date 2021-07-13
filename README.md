@@ -12,11 +12,11 @@ This repository holds the back end services for the application.
 
 The CasperSign project consists of the following repositories:
 
-https://github.com/chronologic/caspersign-app-ui
-https://github.com/chronologic/caspersign-validator-ui
-https://github.com/chronologic/caspersign-signer-ui
-https://github.com/chronologic/caspersign-server (this repository)
-https://github.com/chronologic/caspersign-contract
+- https://github.com/chronologic/caspersign-app-ui
+- https://github.com/chronologic/caspersign-validator-ui
+- https://github.com/chronologic/caspersign-signer-ui
+- https://github.com/chronologic/caspersign-server (this repository)
+- https://github.com/chronologic/caspersign-contract
 
 ## 🔧 Environment variables
 
