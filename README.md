@@ -8,7 +8,17 @@ This repository holds the back end services for the application.
 
 ![DB Diagram](db_diagram.png)
 
-## Environment variables
+## Project overview
+
+The CasperSign project consists of the following repositories:
+
+https://github.com/chronologic/caspersign-app-ui
+https://github.com/chronologic/caspersign-validator-ui
+https://github.com/chronologic/caspersign-signer-ui
+https://github.com/chronologic/caspersign-server (this repository)
+https://github.com/chronologic/caspersign-contract
+
+## 🔧 Environment variables
 
 This repo uses [`dotenv`](https://www.npmjs.com/package/dotenv) to load environment variables.
 
