@@ -5,6 +5,7 @@ import { CASPER_CONTRACT_HASH } from '../../env';
 import { CasperSdkMsg, SignatureInfoSigned } from '../types';
 import { createTimedCache, sha256Hex, sleep } from '../utils';
 import { jsonRpcClient } from './casperSdkClient';
+import { casperJsSdk } from './casperJsSdk';
 
 // execute casper sdk deploys in a separate process because it fails when typeorm package is in scope
 // this is probably due to typeorm modifying some global object casper sdk relies on
@@ -35,7 +36,7 @@ async function getStateRootHash(): Promise<string> {
   }
 
   const latestBlock = await jsonRpcClient.getLatestBlockInfo();
-  const stateRootHash = await jsonRpcClient.getStateRootHash(latestBlock.block.hash);
+  const stateRootHash = await casperJsSdk.jsonRpcClient.getStateRootHash(latestBlock.block.hash);
 
   cache.put(stateRootHashKey, stateRootHash);
 
